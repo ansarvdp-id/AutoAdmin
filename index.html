@@ -17,6 +17,9 @@
         .card { border: none; shadow-sm: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
         .hidden { display: none !important; }
+        .item-list { max-height: 500px; overflow-y: auto; }
+        .list-group-item { display: flex; justify-content: space-between; align-items: center; }
+        .action-btn { cursor: pointer; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -45,8 +48,8 @@
             <ul class="nav flex-column">
                 <li class="nav-item"><a class="nav-link active" onclick="showTab('keys')"><i class="fas fa-key me-2"></i> অ্যাক্টিভেশন কি</a></li>
                 <li class="nav-item"><a class="nav-link" onclick="showTab('slider')"><i class="fas fa-images me-2"></i> স্লাইডার ইমেজ</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showTab('questions')"><i class="fas fa-question-circle me-2"></i> প্রশ্ন যোগ করুন</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showTab('mcq')"><i class="fas fa-list-check me-2"></i> MCQ যোগ করুন</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showTab('questions')"><i class="fas fa-question-circle me-2"></i> প্রশ্ন (General)</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showTab('mcq')"><i class="fas fa-list-check me-2"></i> MCQ</a></li>
                 <li class="nav-item"><a class="nav-link" onclick="showTab('truefalse')"><i class="fas fa-check-square me-2"></i> সত্য/মিথ্যা</a></li>
                 <li class="nav-item"><a class="nav-link" onclick="showTab('translate')"><i class="fas fa-language me-2"></i> ট্রান্সলেট</a></li>
                 <li class="nav-item mt-5"><a class="nav-link text-danger" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> লগআউট</a></li>
@@ -58,7 +61,7 @@
             
             <!-- Generate Keys Tab -->
             <div id="tab-keys" class="content-tab">
-                <h3>🔑 নতুন লাইসেন্স কি তৈরি করুন</h3>
+                <h3>🔑 লাইসেন্স কি তৈরি করুন</h3>
                 <div class="card p-4 mt-3" style="max-width: 500px;">
                     <label class="form-label">মেয়াদ নির্বাচন করুন</label>
                     <select id="keyDuration" class="form-select mb-3">
@@ -74,6 +77,10 @@
                         <p class="mb-0">এই কি টি কপি করে ইউজারকে দিন।</p>
                     </div>
                 </div>
+                
+                <!-- Recent Keys List -->
+                <h5 class="mt-4">সাম্প্রতিক কী (Keys)</h5>
+                <ul class="list-group" id="keyListArea"></ul>
             </div>
 
             <!-- Slider Tab -->
@@ -115,8 +122,9 @@
 
             <!-- Questions Tab -->
             <div id="tab-questions" class="content-tab hidden">
-                <h3>❓ সাধারণ প্রশ্ন যোগ করুন</h3>
+                <h3>❓ সাধারণ প্রশ্ন যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
+                    <input type="hidden" id="editIdQ"> <!-- Hidden ID for Editing -->
                     <input type="text" id="qTitle" class="form-control mb-2" placeholder="প্রশ্ন লিখুন...">
                     <textarea id="qAns" class="form-control mb-2" rows="4" placeholder="উত্তর লিখুন..."></textarea>
                     
@@ -125,16 +133,23 @@
                         <input type="file" class="form-control" id="fileQ">
                         <button class="btn btn-outline-secondary" onclick="uploadImage('fileQ', 'urlQ')">আপলোড</button>
                     </div>
-                    <input type="hidden" id="urlQ">
+                    <input type="text" id="urlQ" class="form-control mb-3" placeholder="ছবির লিংক এখানে আসবে">
                     
-                    <button onclick="addQuestion()" class="btn btn-info text-white">প্রশ্ন যোগ করুন</button>
+                    <div class="d-flex gap-2">
+                        <button onclick="saveQuestion()" id="btnSaveQ" class="btn btn-info text-white">প্রশ্ন যোগ করুন</button>
+                        <button onclick="resetForm('question')" id="btnCancelQ" class="btn btn-secondary hidden">বাতিল (Cancel)</button>
+                    </div>
                 </div>
+
+                <h5 class="mt-4">সংরক্ষিত প্রশ্নসমূহ:</h5>
+                <div class="list-group item-list" id="listQuestions">Loading...</div>
             </div>
 
             <!-- MCQ Tab -->
             <div id="tab-mcq" class="content-tab hidden">
-                <h3>📝 MCQ যোগ করুন</h3>
+                <h3>📝 MCQ যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
+                    <input type="hidden" id="editIdMCQ">
                     <input type="text" id="mcqTitle" class="form-control mb-3" placeholder="MCQ প্রশ্ন...">
                     
                     <div class="row g-2 mb-3">
@@ -152,27 +167,41 @@
                         <option value="4">অপশন ৪</option>
                     </select>
 
-                    <button onclick="addMCQ()" class="btn btn-warning">MCQ সেভ করুন</button>
+                    <div class="d-flex gap-2">
+                        <button onclick="saveMCQ()" id="btnSaveMCQ" class="btn btn-warning">MCQ সেভ করুন</button>
+                        <button onclick="resetForm('mcq')" id="btnCancelMCQ" class="btn btn-secondary hidden">বাতিল</button>
+                    </div>
                 </div>
+
+                <h5 class="mt-4">সংরক্ষিত MCQ:</h5>
+                <div class="list-group item-list" id="listMCQ">Loading...</div>
             </div>
 
             <!-- True/False Tab -->
             <div id="tab-truefalse" class="content-tab hidden">
-                <h3>✅ সত্য / মিথ্যা যোগ করুন</h3>
+                <h3>✅ সত্য / মিথ্যা যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
+                    <input type="hidden" id="editIdTF">
                     <input type="text" id="tfTitle" class="form-control mb-3" placeholder="বাক্যটি লিখুন...">
                     <select id="tfCorrect" class="form-select mb-3">
                         <option value="সত্য">সত্য (True)</option>
                         <option value="মিথ্যা">মিথ্যা (False)</option>
                     </select>
-                    <button onclick="addTrueFalse()" class="btn btn-secondary">সেভ করুন</button>
+                    <div class="d-flex gap-2">
+                        <button onclick="saveTrueFalse()" id="btnSaveTF" class="btn btn-success">সেভ করুন</button>
+                        <button onclick="resetForm('truefalse')" id="btnCancelTF" class="btn btn-secondary hidden">বাতিল</button>
+                    </div>
                 </div>
+
+                <h5 class="mt-4">সংরক্ষিত সত্য/মিথ্যা:</h5>
+                <div class="list-group item-list" id="listTF">Loading...</div>
             </div>
 
              <!-- Translate Tab -->
              <div id="tab-translate" class="content-tab hidden">
-                <h3>🔤 অনুবাদ (Translate) যোগ করুন</h3>
+                <h3>🔤 অনুবাদ (Translate) যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
+                    <input type="hidden" id="editIdTrans">
                     <div class="mb-2">
                         <label>বাংলা বাক্য</label>
                         <input type="text" id="transBn" class="form-control" placeholder="আমি মেকানিক...">
@@ -181,8 +210,14 @@
                         <label>ইংরেজি অনুবাদ</label>
                         <input type="text" id="transEn" class="form-control" placeholder="I am a mechanic...">
                     </div>
-                    <button onclick="addTranslate()" class="btn btn-dark">অনুবাদ যোগ করুন</button>
+                    <div class="d-flex gap-2">
+                        <button onclick="saveTranslate()" id="btnSaveTrans" class="btn btn-dark">অনুবাদ যোগ করুন</button>
+                        <button onclick="resetForm('translate')" id="btnCancelTrans" class="btn btn-secondary hidden">বাতিল</button>
+                    </div>
                 </div>
+
+                <h5 class="mt-4">সংরক্ষিত অনুবাদ:</h5>
+                <div class="list-group item-list" id="listTranslate">Loading...</div>
             </div>
 
         </main>
@@ -196,7 +231,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, addDoc, Timestamp, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBEfs_yi_U5AObahTTLQGK5Sj4k1wSBXb0",
@@ -250,6 +285,7 @@
             document.getElementById("loginSection").classList.add("hidden");
             document.getElementById("dashboardSection").classList.remove("hidden");
             showToast("অ্যাডমিন প্যানেলে স্বাগতম");
+            startListeners(); // Start fetching data
         } else {
             showToast("আপনার অ্যাডমিন পারমিশন নেই!", "error");
             signOut(auth);
@@ -296,9 +332,350 @@
         }
     }
 
-    // -- FEATURES (FIXED FOR USER APP) --
+    // -- REALTIME DATA LISTENERS & RENDERING --
+    function startListeners() {
+        // 1. Listen for Keys
+        const qKeys = query(collection(db, "activation_keys"), orderBy("createdAt", "desc"));
+        onSnapshot(qKeys, (snapshot) => {
+            let html = "";
+            snapshot.forEach(doc => {
+                let d = doc.data();
+                html += `<li class="list-group-item">
+                    <span>${d.key} (${d.days} দিন) - ${d.used ? '<span class="text-danger">ব্যবহৃত</span>' : '<span class="text-success">অব্যবহৃত</span>'}</span>
+                    <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('activation_keys', '${doc.id}')"></i>
+                </li>`;
+            });
+            document.getElementById("keyListArea").innerHTML = html;
+        });
 
-    // 1. Generate Key
+        // 2. Listen for Contents (Questions, MCQ, True/False, Translate)
+        const qContent = query(collection(db, "contents"), orderBy("createdAt", "desc"));
+        onSnapshot(qContent, (snapshot) => {
+            let htmlQ = "", htmlMCQ = "", htmlTF = "", htmlTrans = "";
+            
+            snapshot.forEach(docSnap => {
+                let d = docSnap.data();
+                let id = docSnap.id;
+                
+                // --- General Question Render ---
+                if(d.type === 'question') {
+                    htmlQ += `
+                    <div class="list-group-item">
+                        <div>
+                            <strong>${d.question}</strong><br>
+                            <small class="text-muted">${d.answer.substring(0,50)}...</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-edit text-primary action-btn" onclick="editQuestion('${id}', '${encodeURIComponent(d.question)}', '${encodeURIComponent(d.answer)}', '${d.image || ''}')"></i>
+                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
+                        </div>
+                    </div>`;
+                }
+                
+                // --- MCQ Render ---
+                else if(d.type === 'mcq') {
+                    // Pass options as string
+                    let opts = JSON.stringify(d.options);
+                    htmlMCQ += `
+                    <div class="list-group-item">
+                        <div>
+                            <strong>${d.question}</strong><br>
+                            <small class="text-success">Correct: ${d.correct}</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-edit text-primary action-btn" onclick='editMCQ("${id}", "${encodeURIComponent(d.question)}", ${opts}, "${encodeURIComponent(d.correct)}")'></i>
+                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
+                        </div>
+                    </div>`;
+                }
+                
+                // --- True/False Render ---
+                else if(d.type === 'truefalse') {
+                    htmlTF += `
+                    <div class="list-group-item">
+                        <div>${d.question} <span class="badge bg-secondary">${d.correct}</span></div>
+                        <div>
+                            <i class="fas fa-edit text-primary action-btn" onclick="editTF('${id}', '${encodeURIComponent(d.question)}', '${d.correct}')"></i>
+                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
+                        </div>
+                    </div>`;
+                }
+                
+                // --- Translate Render ---
+                else if(d.type === 'translate') {
+                    htmlTrans += `
+                    <div class="list-group-item">
+                        <div>${d.question} <i class="fas fa-arrow-right"></i> ${d.answer}</div>
+                        <div>
+                            <i class="fas fa-edit text-primary action-btn" onclick="editTrans('${id}', '${encodeURIComponent(d.question)}', '${encodeURIComponent(d.answer)}')"></i>
+                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            document.getElementById("listQuestions").innerHTML = htmlQ || "<p class='text-muted p-3'>কোনো প্রশ্ন নেই</p>";
+            document.getElementById("listMCQ").innerHTML = htmlMCQ || "<p class='text-muted p-3'>কোনো MCQ নেই</p>";
+            document.getElementById("listTF").innerHTML = htmlTF || "<p class='text-muted p-3'>কোনো তথ্য নেই</p>";
+            document.getElementById("listTranslate").innerHTML = htmlTrans || "<p class='text-muted p-3'>কোনো অনুবাদ নেই</p>";
+        });
+
+        // 3. Slider Images (Fetch Once)
+        getDoc(doc(db, "app_settings", "slider")).then(snap => {
+            if(snap.exists()) {
+                const imgs = snap.data().images || [];
+                if(imgs[0]) document.getElementById("urlSlide1").value = imgs[0];
+                if(imgs[1]) document.getElementById("urlSlide2").value = imgs[1];
+                if(imgs[2]) document.getElementById("urlSlide3").value = imgs[2];
+            }
+        });
+    }
+
+    // -- UNIVERSAL DELETE --
+    window.deleteItem = async (colName, id) => {
+        if(!confirm("আপনি কি নিশ্চিত এটি ডিলিট করবেন?")) return;
+        toggleLoading(true);
+        try {
+            await deleteDoc(doc(db, colName, id));
+            showToast("ডিলিট সফল!");
+        } catch (e) {
+            showToast("ডিলিট ব্যর্থ", "error");
+        }
+        toggleLoading(false);
+    }
+
+    // -- RESET FORM --
+    window.resetForm = (type) => {
+        if(type === 'question') {
+            document.getElementById("editIdQ").value = "";
+            document.getElementById("qTitle").value = "";
+            document.getElementById("qAns").value = "";
+            document.getElementById("urlQ").value = "";
+            document.getElementById("btnSaveQ").innerText = "প্রশ্ন যোগ করুন";
+            document.getElementById("btnSaveQ").className = "btn btn-info text-white";
+            document.getElementById("btnCancelQ").classList.add("hidden");
+        }
+        else if(type === 'mcq') {
+            document.getElementById("editIdMCQ").value = "";
+            document.getElementById("mcqTitle").value = "";
+            ['opt1','opt2','opt3','opt4'].forEach(id => document.getElementById(id).value = "");
+            document.getElementById("mcqCorrect").value = "1";
+            document.getElementById("btnSaveMCQ").innerText = "MCQ সেভ করুন";
+            document.getElementById("btnSaveMCQ").className = "btn btn-warning";
+            document.getElementById("btnCancelMCQ").classList.add("hidden");
+        }
+        else if(type === 'truefalse') {
+            document.getElementById("editIdTF").value = "";
+            document.getElementById("tfTitle").value = "";
+            document.getElementById("tfCorrect").value = "সত্য";
+            document.getElementById("btnSaveTF").innerText = "সেভ করুন";
+            document.getElementById("btnSaveTF").className = "btn btn-success";
+            document.getElementById("btnCancelTF").classList.add("hidden");
+        }
+        else if(type === 'translate') {
+            document.getElementById("editIdTrans").value = "";
+            document.getElementById("transBn").value = "";
+            document.getElementById("transEn").value = "";
+            document.getElementById("btnSaveTrans").innerText = "অনুবাদ যোগ করুন";
+            document.getElementById("btnSaveTrans").className = "btn btn-dark";
+            document.getElementById("btnCancelTrans").classList.add("hidden");
+        }
+    }
+
+    // -- SAVE / UPDATE FUNCTIONS --
+
+    // 1. Question
+    window.editQuestion = (id, q, a, img) => {
+        document.getElementById("editIdQ").value = id;
+        document.getElementById("qTitle").value = decodeURIComponent(q);
+        document.getElementById("qAns").value = decodeURIComponent(a);
+        document.getElementById("urlQ").value = img;
+        
+        document.getElementById("btnSaveQ").innerText = "আপডেট করুন";
+        document.getElementById("btnSaveQ").className = "btn btn-primary";
+        document.getElementById("btnCancelQ").classList.remove("hidden");
+        document.body.scrollTop = 0; 
+        document.documentElement.scrollTop = 0;
+    }
+
+    window.saveQuestion = async () => {
+        const id = document.getElementById("editIdQ").value;
+        const q = document.getElementById("qTitle").value;
+        const a = document.getElementById("qAns").value;
+        const img = document.getElementById("urlQ").value;
+
+        if(!q || !a) return showToast("প্রশ্ন ও উত্তর লিখুন", "error");
+
+        toggleLoading(true);
+        try {
+            const data = {
+                type: 'question',
+                question: q,
+                answer: a,
+                image: img || null,
+                createdAt: Timestamp.now()
+            };
+
+            if(id) {
+                // Update
+                delete data.createdAt; // Don't update timestamp
+                await updateDoc(doc(db, "contents", id), data);
+                showToast("আপডেট সফল!");
+            } else {
+                // Add
+                await addDoc(collection(db, "contents"), data);
+                showToast("প্রশ্ন যোগ হয়েছে!");
+            }
+            resetForm('question');
+        } catch (e) { showToast("ব্যর্থ: " + e.message, "error"); }
+        toggleLoading(false);
+    }
+
+    // 2. MCQ
+    window.editMCQ = (id, q, options, correct) => {
+        document.getElementById("editIdMCQ").value = id;
+        document.getElementById("mcqTitle").value = decodeURIComponent(q);
+        
+        const decodedCorrect = decodeURIComponent(correct);
+        
+        if(options[0]) document.getElementById("opt1").value = options[0];
+        if(options[1]) document.getElementById("opt2").value = options[1];
+        if(options[2]) document.getElementById("opt3").value = options[2];
+        if(options[3]) document.getElementById("opt4").value = options[3];
+
+        // Find correct index
+        let correctIndex = options.indexOf(decodedCorrect) + 1;
+        if(correctIndex > 0) document.getElementById("mcqCorrect").value = correctIndex;
+
+        document.getElementById("btnSaveMCQ").innerText = "আপডেট করুন";
+        document.getElementById("btnSaveMCQ").className = "btn btn-primary";
+        document.getElementById("btnCancelMCQ").classList.remove("hidden");
+        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
+    }
+
+    window.saveMCQ = async () => {
+        const id = document.getElementById("editIdMCQ").value;
+        const q = document.getElementById("mcqTitle").value;
+        const o1 = document.getElementById("opt1").value;
+        const o2 = document.getElementById("opt2").value;
+        const o3 = document.getElementById("opt3").value;
+        const o4 = document.getElementById("opt4").value;
+        const correctIndex = document.getElementById("mcqCorrect").value;
+
+        if(!q || !o1 || !o2) return showToast("প্রশ্ন ও অন্তত ২টি অপশন দিন", "error");
+        
+        const options = [o1, o2, o3, o4].filter(o => o);
+        const correctValue = options[parseInt(correctIndex)-1];
+
+        if(!correctValue) return showToast("সঠিক উত্তরটি অপশনে নেই", "error");
+
+        toggleLoading(true);
+        try {
+            const data = {
+                type: 'mcq',
+                question: q,
+                options: options,
+                correct: correctValue,
+                createdAt: Timestamp.now()
+            };
+
+            if(id) {
+                delete data.createdAt;
+                await updateDoc(doc(db, "contents", id), data);
+                showToast("MCQ আপডেট হয়েছে!");
+            } else {
+                await addDoc(collection(db, "contents"), data);
+                showToast("MCQ যোগ হয়েছে!");
+            }
+            resetForm('mcq');
+        } catch (e) { showToast("ব্যর্থ", "error"); }
+        toggleLoading(false);
+    }
+
+    // 3. True/False
+    window.editTF = (id, q, correct) => {
+        document.getElementById("editIdTF").value = id;
+        document.getElementById("tfTitle").value = decodeURIComponent(q);
+        document.getElementById("tfCorrect").value = correct;
+
+        document.getElementById("btnSaveTF").innerText = "আপডেট করুন";
+        document.getElementById("btnSaveTF").className = "btn btn-primary";
+        document.getElementById("btnCancelTF").classList.remove("hidden");
+        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
+    }
+
+    window.saveTrueFalse = async () => {
+        const id = document.getElementById("editIdTF").value;
+        const title = document.getElementById("tfTitle").value;
+        const correctVal = document.getElementById("tfCorrect").value;
+
+        if(!title) return showToast("বাক্য লিখুন", "error");
+
+        toggleLoading(true);
+        try {
+            const data = {
+                type: 'truefalse',
+                question: title,
+                options: ["সত্য", "মিথ্যা"],
+                correct: correctVal,
+                createdAt: Timestamp.now()
+            };
+
+            if(id) {
+                delete data.createdAt;
+                await updateDoc(doc(db, "contents", id), data);
+                showToast("আপডেট হয়েছে!");
+            } else {
+                await addDoc(collection(db, "contents"), data);
+                showToast("যোগ হয়েছে!");
+            }
+            resetForm('truefalse');
+        } catch (e) { showToast("ব্যর্থ", "error"); }
+        toggleLoading(false);
+    }
+
+    // 4. Translate
+    window.editTrans = (id, bn, en) => {
+        document.getElementById("editIdTrans").value = id;
+        document.getElementById("transBn").value = decodeURIComponent(bn);
+        document.getElementById("transEn").value = decodeURIComponent(en);
+
+        document.getElementById("btnSaveTrans").innerText = "আপডেট করুন";
+        document.getElementById("btnSaveTrans").className = "btn btn-primary";
+        document.getElementById("btnCancelTrans").classList.remove("hidden");
+        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
+    }
+
+    window.saveTranslate = async () => {
+        const id = document.getElementById("editIdTrans").value;
+        const bn = document.getElementById("transBn").value;
+        const en = document.getElementById("transEn").value;
+
+        if(!bn || !en) return showToast("উভয় বাক্য লিখুন", "error");
+
+        toggleLoading(true);
+        try {
+            const data = {
+                type: 'translate',
+                question: bn,
+                answer: en,
+                createdAt: Timestamp.now()
+            };
+
+            if(id) {
+                delete data.createdAt;
+                await updateDoc(doc(db, "contents", id), data);
+                showToast("অনুবাদ আপডেট হয়েছে!");
+            } else {
+                await addDoc(collection(db, "contents"), data);
+                showToast("অনুবাদ যোগ হয়েছে!");
+            }
+            resetForm('translate');
+        } catch (e) { showToast("ব্যর্থ", "error"); }
+        toggleLoading(false);
+    }
+
+    // 5. Generate Key
     window.generateKey = async () => {
         const days = document.getElementById("keyDuration").value;
         const newKey = "AUTO-" + Math.floor(100000 + Math.random() * 900000); 
@@ -321,124 +698,19 @@
         }
     }
 
-    // 2. Update Slider
+    // 6. Update Slider (Existing Logic)
     window.updateSlider = async () => {
         const u1 = document.getElementById("urlSlide1").value;
         const u2 = document.getElementById("urlSlide2").value;
         const u3 = document.getElementById("urlSlide3").value;
 
         if(!u1) return showToast("অন্তত প্রথম স্লাইড দিতে হবে", "error");
-
         const images = [u1, u2, u3].filter(i => i);
         
         toggleLoading(true);
         try {
             await setDoc(doc(db, "app_settings", "slider"), { images });
             showToast("স্লাইডার আপডেট সফল!");
-        } catch (e) { showToast("ব্যর্থ", "error"); }
-        toggleLoading(false);
-    }
-
-    // 3. Add Question (Fix: Added 'type' & changed collection to 'contents')
-    window.addQuestion = async () => {
-        const q = document.getElementById("qTitle").value;
-        const a = document.getElementById("qAns").value;
-        const img = document.getElementById("urlQ").value;
-
-        if(!q || !a) return showToast("প্রশ্ন ও উত্তর লিখুন", "error");
-
-        toggleLoading(true);
-        try {
-            // UPDATED COLLECTION NAME
-            await addDoc(collection(db, "contents"), {
-                type: 'question',
-                question: q,
-                answer: a,
-                image: img || null,
-                createdAt: Timestamp.now()
-            });
-            showToast("প্রশ্ন যোগ হয়েছে!");
-            document.getElementById("qTitle").value = "";
-            document.getElementById("qAns").value = "";
-        } catch (e) { showToast("ব্যর্থ", "error"); console.log(e); }
-        toggleLoading(false);
-    }
-
-    // 4. Add MCQ (Fix: Added 'type', 'correct' value instead of index)
-    window.addMCQ = async () => {
-        const q = document.getElementById("mcqTitle").value;
-        const o1 = document.getElementById("opt1").value;
-        const o2 = document.getElementById("opt2").value;
-        const o3 = document.getElementById("opt3").value;
-        const o4 = document.getElementById("opt4").value;
-        const correctIndex = document.getElementById("mcqCorrect").value; // 1,2,3,4
-
-        if(!q || !o1 || !o2) return showToast("প্রশ্ন ও অন্তত ২টি অপশন দিন", "error");
-        
-        const options = [o1, o2, o3, o4].filter(o => o);
-        // Find the actual text of the correct answer
-        const correctValue = options[parseInt(correctIndex)-1];
-
-        if(!correctValue) return showToast("সঠিক উত্তরটি অপশনে নেই", "error");
-
-        toggleLoading(true);
-        try {
-            // UPDATED
-            await addDoc(collection(db, "contents"), {
-                type: 'mcq',
-                question: q,
-                options: options,
-                correct: correctValue, // Save exact string for Main App matching
-                createdAt: Timestamp.now()
-            });
-            showToast("MCQ যোগ হয়েছে!");
-            document.getElementById("mcqTitle").value = "";
-        } catch (e) { showToast("ব্যর্থ", "error"); }
-        toggleLoading(false);
-    }
-
-    // 5. Add True/False (Fix: Added 'type' & 'options' array for UI consistency)
-    window.addTrueFalse = async () => {
-        const title = document.getElementById("tfTitle").value;
-        const correctVal = document.getElementById("tfCorrect").value; // "সত্য" or "মিথ্যা"
-
-        if(!title) return showToast("বাক্য লিখুন", "error");
-
-        toggleLoading(true);
-        try {
-            // UPDATED
-            await addDoc(collection(db, "contents"), {
-                type: 'truefalse',
-                question: title,
-                options: ["সত্য", "মিথ্যা"], // Main app needs options array
-                correct: correctVal,
-                createdAt: Timestamp.now()
-            });
-            showToast("সত্য/মিথ্যা যোগ হয়েছে!");
-            document.getElementById("tfTitle").value = "";
-        } catch (e) { showToast("ব্যর্থ", "error"); }
-        toggleLoading(false);
-    }
-
-    // 6. Add Translate (Fix: Added 'type', mapped fields to 'question'/'answer')
-    window.addTranslate = async () => {
-        const bn = document.getElementById("transBn").value;
-        const en = document.getElementById("transEn").value;
-
-        if(!bn || !en) return showToast("উভয় বাক্য লিখুন", "error");
-
-        toggleLoading(true);
-        try {
-            // UPDATED
-            await addDoc(collection(db, "contents"), {
-                type: 'translate',
-                question: bn, // Main App shows 'question' as Bangla
-                answer: en,   // Main App shows 'answer' as English
-                createdAt: Timestamp.now()
-            });
-            showToast("অনুবাদ যোগ হয়েছে!");
-            document.getElementById("transBn").value = "";
-            document.getElementById("transEn").value = "";
         } catch (e) { showToast("ব্যর্থ", "error"); }
         toggleLoading(false);
     }

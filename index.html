@@ -20,6 +20,7 @@
         .item-list { max-height: 500px; overflow-y: auto; }
         .list-group-item { display: flex; justify-content: space-between; align-items: center; }
         .action-btn { cursor: pointer; margin-left: 10px; }
+        .ebook-thumb { width: 50px; height: 70px; object-fit: cover; border: 1px solid #ddd; margin-right: 10px; }
     </style>
 </head>
 <body>
@@ -48,6 +49,9 @@
             <ul class="nav flex-column">
                 <li class="nav-item"><a class="nav-link active" onclick="showTab('keys')"><i class="fas fa-key me-2"></i> অ্যাক্টিভেশন কি</a></li>
                 <li class="nav-item"><a class="nav-link" onclick="showTab('slider')"><i class="fas fa-images me-2"></i> স্লাইডার ইমেজ</a></li>
+                <!-- New Ebook Option -->
+                <li class="nav-item"><a class="nav-link" onclick="showTab('ebook')"><i class="fas fa-book-open me-2"></i> ই-বুক (Ebook)</a></li>
+                
                 <li class="nav-item"><a class="nav-link" onclick="showTab('questions')"><i class="fas fa-question-circle me-2"></i> প্রশ্ন (General)</a></li>
                 <li class="nav-item"><a class="nav-link" onclick="showTab('mcq')"><i class="fas fa-list-check me-2"></i> MCQ</a></li>
                 <li class="nav-item"><a class="nav-link" onclick="showTab('truefalse')"><i class="fas fa-check-square me-2"></i> সত্য/মিথ্যা</a></li>
@@ -77,8 +81,6 @@
                         <p class="mb-0">এই কি টি কপি করে ইউজারকে দিন।</p>
                     </div>
                 </div>
-                
-                <!-- Recent Keys List -->
                 <h5 class="mt-4">সাম্প্রতিক কী (Keys)</h5>
                 <ul class="list-group" id="keyListArea"></ul>
             </div>
@@ -88,7 +90,6 @@
                 <h3>🖼️ অ্যাপ স্লাইডার আপডেট</h3>
                 <div class="card p-4 mt-3">
                     <p class="text-muted">ইমেজ আপলোড করুন অথবা সরাসরি লিংক দিন।</p>
-                    
                     <div class="mb-3">
                         <label>স্লাইড ১</label>
                         <div class="input-group">
@@ -97,7 +98,6 @@
                         </div>
                         <input type="text" id="urlSlide1" class="form-control mt-1" placeholder="Image URL">
                     </div>
-
                     <div class="mb-3">
                         <label>স্লাইড ২</label>
                         <div class="input-group">
@@ -106,7 +106,6 @@
                         </div>
                         <input type="text" id="urlSlide2" class="form-control mt-1" placeholder="Image URL">
                     </div>
-
                     <div class="mb-3">
                         <label>স্লাইড ৩</label>
                         <div class="input-group">
@@ -115,16 +114,40 @@
                         </div>
                         <input type="text" id="urlSlide3" class="form-control mt-1" placeholder="Image URL">
                     </div>
-
                     <button onclick="updateSlider()" class="btn btn-primary">স্লাইডার আপডেট করুন</button>
                 </div>
+            </div>
+
+            <!-- EBOOK TAB (NEW) -->
+            <div id="tab-ebook" class="content-tab hidden">
+                <h3>📘 ই-বুক পেজ ম্যানেজমেন্ট</h3>
+                <div class="alert alert-info">
+                    <small>এখানে পেজগুলো ক্রমানুসারে দেখা যাবে। নতুন ইমেজ আপলোড করলে সেটি সবার শেষে যুক্ত হবে।</small>
+                </div>
+                <div class="card p-4 mt-3">
+                    <input type="hidden" id="editIdEbook">
+                    <label>ই-বুক পেজ ইমেজ (Upload Image)</label>
+                    <div class="input-group mb-3">
+                        <input type="file" class="form-control" id="fileEbook">
+                        <button class="btn btn-outline-secondary" onclick="uploadImage('fileEbook', 'urlEbook')">আপলোড</button>
+                    </div>
+                    <input type="text" id="urlEbook" class="form-control mb-3" placeholder="ইমেজ লিংক...">
+                    
+                    <div class="d-flex gap-2">
+                        <button onclick="saveEbook()" id="btnSaveEbook" class="btn btn-primary">পেজ যোগ করুন</button>
+                        <button onclick="resetForm('ebook')" id="btnCancelEbook" class="btn btn-secondary hidden">বাতিল</button>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">সংরক্ষিত পেজসমূহ:</h5>
+                <div class="list-group item-list" id="listEbook">Loading...</div>
             </div>
 
             <!-- Questions Tab -->
             <div id="tab-questions" class="content-tab hidden">
                 <h3>❓ সাধারণ প্রশ্ন যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
-                    <input type="hidden" id="editIdQ"> <!-- Hidden ID for Editing -->
+                    <input type="hidden" id="editIdQ">
                     <input type="text" id="qTitle" class="form-control mb-2" placeholder="প্রশ্ন লিখুন...">
                     <textarea id="qAns" class="form-control mb-2" rows="4" placeholder="উত্তর লিখুন..."></textarea>
                     
@@ -137,28 +160,25 @@
                     
                     <div class="d-flex gap-2">
                         <button onclick="saveQuestion()" id="btnSaveQ" class="btn btn-info text-white">প্রশ্ন যোগ করুন</button>
-                        <button onclick="resetForm('question')" id="btnCancelQ" class="btn btn-secondary hidden">বাতিল (Cancel)</button>
+                        <button onclick="resetForm('question')" id="btnCancelQ" class="btn btn-secondary hidden">বাতিল</button>
                     </div>
                 </div>
-
                 <h5 class="mt-4">সংরক্ষিত প্রশ্নসমূহ:</h5>
                 <div class="list-group item-list" id="listQuestions">Loading...</div>
             </div>
 
-            <!-- MCQ Tab -->
+            <!-- Other Tabs (MCQ, TF, Translate) -->
             <div id="tab-mcq" class="content-tab hidden">
                 <h3>📝 MCQ যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
                     <input type="hidden" id="editIdMCQ">
                     <input type="text" id="mcqTitle" class="form-control mb-3" placeholder="MCQ প্রশ্ন...">
-                    
                     <div class="row g-2 mb-3">
                         <div class="col-6"><input type="text" id="opt1" class="form-control" placeholder="অপশন ১"></div>
                         <div class="col-6"><input type="text" id="opt2" class="form-control" placeholder="অপশন ২"></div>
                         <div class="col-6"><input type="text" id="opt3" class="form-control" placeholder="অপশন ৩"></div>
                         <div class="col-6"><input type="text" id="opt4" class="form-control" placeholder="অপশন ৪"></div>
                     </div>
-
                     <label>সঠিক উত্তর কোনটি?</label>
                     <select id="mcqCorrect" class="form-select mb-3">
                         <option value="1">অপশন ১</option>
@@ -166,18 +186,15 @@
                         <option value="3">অপশন ৩</option>
                         <option value="4">অপশন ৪</option>
                     </select>
-
                     <div class="d-flex gap-2">
                         <button onclick="saveMCQ()" id="btnSaveMCQ" class="btn btn-warning">MCQ সেভ করুন</button>
                         <button onclick="resetForm('mcq')" id="btnCancelMCQ" class="btn btn-secondary hidden">বাতিল</button>
                     </div>
                 </div>
-
                 <h5 class="mt-4">সংরক্ষিত MCQ:</h5>
                 <div class="list-group item-list" id="listMCQ">Loading...</div>
             </div>
 
-            <!-- True/False Tab -->
             <div id="tab-truefalse" class="content-tab hidden">
                 <h3>✅ সত্য / মিথ্যা যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
@@ -192,12 +209,10 @@
                         <button onclick="resetForm('truefalse')" id="btnCancelTF" class="btn btn-secondary hidden">বাতিল</button>
                     </div>
                 </div>
-
                 <h5 class="mt-4">সংরক্ষিত সত্য/মিথ্যা:</h5>
                 <div class="list-group item-list" id="listTF">Loading...</div>
             </div>
 
-             <!-- Translate Tab -->
              <div id="tab-translate" class="content-tab hidden">
                 <h3>🔤 অনুবাদ (Translate) যোগ/এডিট করুন</h3>
                 <div class="card p-4 mt-3">
@@ -215,7 +230,6 @@
                         <button onclick="resetForm('translate')" id="btnCancelTrans" class="btn btn-secondary hidden">বাতিল</button>
                     </div>
                 </div>
-
                 <h5 class="mt-4">সংরক্ষিত অনুবাদ:</h5>
                 <div class="list-group item-list" id="listTranslate">Loading...</div>
             </div>
@@ -268,7 +282,6 @@
     window.adminLogin = async () => {
         const email = document.getElementById("adminEmail").value;
         const pass = document.getElementById("adminPass").value;
-        
         toggleLoading(true);
         try {
             const userCred = await signInWithEmailAndPassword(auth, email, pass);
@@ -285,7 +298,7 @@
             document.getElementById("loginSection").classList.add("hidden");
             document.getElementById("dashboardSection").classList.remove("hidden");
             showToast("অ্যাডমিন প্যানেলে স্বাগতম");
-            startListeners(); // Start fetching data
+            startListeners();
         } else {
             showToast("আপনার অ্যাডমিন পারমিশন নেই!", "error");
             signOut(auth);
@@ -302,9 +315,7 @@
         }
     });
 
-    window.logout = () => {
-        signOut(auth);
-    }
+    window.logout = () => { signOut(auth); }
 
     // -- CLOUDINARY UPLOAD --
     window.uploadImage = async (inputId, outputId) => {
@@ -319,8 +330,7 @@
 
         try {
             let res = await fetch("https://api.cloudinary.com/v1_1/dntvrm1wn/image/upload", {
-                method: "POST",
-                body: formData
+                method: "POST", body: formData
             });
             let data = await res.json();
             document.getElementById(outputId).value = data.secure_url;
@@ -332,11 +342,10 @@
         }
     }
 
-    // -- REALTIME DATA LISTENERS & RENDERING --
+    // -- REALTIME DATA LISTENERS --
     function startListeners() {
-        // 1. Listen for Keys
-        const qKeys = query(collection(db, "activation_keys"), orderBy("createdAt", "desc"));
-        onSnapshot(qKeys, (snapshot) => {
+        // Activation Keys
+        onSnapshot(query(collection(db, "activation_keys"), orderBy("createdAt", "desc")), (snapshot) => {
             let html = "";
             snapshot.forEach(doc => {
                 let d = doc.data();
@@ -348,18 +357,43 @@
             document.getElementById("keyListArea").innerHTML = html;
         });
 
-        // 2. Listen for Contents (Questions, MCQ, True/False, Translate)
-        const qContent = query(collection(db, "contents"), orderBy("createdAt", "desc"));
-        onSnapshot(qContent, (snapshot) => {
-            let htmlQ = "", htmlMCQ = "", htmlTF = "", htmlTrans = "";
-            
+        // Contents (Question, MCQ, TF, Trans, EBOOK)
+        // Note: Used orderBy createdAt asc for Ebook to maintain sequence logic similar to User App
+        onSnapshot(query(collection(db, "contents"), orderBy("createdAt", "asc")), (snapshot) => {
+            let htmlQ = "", htmlMCQ = "", htmlTF = "", htmlTrans = "", htmlEbook = "";
+            let ebookCount = 0;
+
             snapshot.forEach(docSnap => {
                 let d = docSnap.data();
                 let id = docSnap.id;
                 
-                // --- General Question Render ---
-                if(d.type === 'question') {
-                    htmlQ += `
+                if(d.type === 'ebook') {
+                    ebookCount++;
+                    // Bangla Number Conversion
+                    const toBangla = (n) => n.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+                    
+                    htmlEbook += `
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-center">
+                            <img src="${d.image}" class="ebook-thumb">
+                            <div>
+                                <strong>পেজ: ${toBangla(ebookCount)}</strong><br>
+                                <small class="text-muted">আপলোড: ${d.createdAt?.toDate().toLocaleDateString()}</small>
+                            </div>
+                        </div>
+                        <div>
+                            <i class="fas fa-edit text-primary action-btn" onclick="editEbook('${id}', '${d.image}')"></i>
+                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
+                        </div>
+                    </div>`;
+                }
+
+                // Reverse order for other contents (Latest first) logic applied in UI grouping or we can accept ASC here
+                // Note: User App uses DESC for Questions, ASC for Ebook. 
+                // Since this query is ASC, we prepend for Q/MCQ to mimic DESC, append for Ebook.
+                
+                else if(d.type === 'question') {
+                    htmlQ = `
                     <div class="list-group-item">
                         <div>
                             <strong>${d.question}</strong><br>
@@ -369,14 +403,11 @@
                             <i class="fas fa-edit text-primary action-btn" onclick="editQuestion('${id}', '${encodeURIComponent(d.question)}', '${encodeURIComponent(d.answer)}', '${d.image || ''}')"></i>
                             <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
                         </div>
-                    </div>`;
+                    </div>` + htmlQ;
                 }
-                
-                // --- MCQ Render ---
                 else if(d.type === 'mcq') {
-                    // Pass options as string
                     let opts = JSON.stringify(d.options);
-                    htmlMCQ += `
+                    htmlMCQ = `
                     <div class="list-group-item">
                         <div>
                             <strong>${d.question}</strong><br>
@@ -386,41 +417,38 @@
                             <i class="fas fa-edit text-primary action-btn" onclick='editMCQ("${id}", "${encodeURIComponent(d.question)}", ${opts}, "${encodeURIComponent(d.correct)}")'></i>
                             <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
                         </div>
-                    </div>`;
+                    </div>` + htmlMCQ;
                 }
-                
-                // --- True/False Render ---
                 else if(d.type === 'truefalse') {
-                    htmlTF += `
+                    htmlTF = `
                     <div class="list-group-item">
                         <div>${d.question} <span class="badge bg-secondary">${d.correct}</span></div>
                         <div>
                             <i class="fas fa-edit text-primary action-btn" onclick="editTF('${id}', '${encodeURIComponent(d.question)}', '${d.correct}')"></i>
                             <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
                         </div>
-                    </div>`;
+                    </div>` + htmlTF;
                 }
-                
-                // --- Translate Render ---
                 else if(d.type === 'translate') {
-                    htmlTrans += `
+                    htmlTrans = `
                     <div class="list-group-item">
                         <div>${d.question} <i class="fas fa-arrow-right"></i> ${d.answer}</div>
                         <div>
                             <i class="fas fa-edit text-primary action-btn" onclick="editTrans('${id}', '${encodeURIComponent(d.question)}', '${encodeURIComponent(d.answer)}')"></i>
                             <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
                         </div>
-                    </div>`;
+                    </div>` + htmlTrans;
                 }
             });
 
+            document.getElementById("listEbook").innerHTML = htmlEbook || "<p class='text-muted p-3'>কোনো পেজ নেই</p>";
             document.getElementById("listQuestions").innerHTML = htmlQ || "<p class='text-muted p-3'>কোনো প্রশ্ন নেই</p>";
             document.getElementById("listMCQ").innerHTML = htmlMCQ || "<p class='text-muted p-3'>কোনো MCQ নেই</p>";
             document.getElementById("listTF").innerHTML = htmlTF || "<p class='text-muted p-3'>কোনো তথ্য নেই</p>";
             document.getElementById("listTranslate").innerHTML = htmlTrans || "<p class='text-muted p-3'>কোনো অনুবাদ নেই</p>";
         });
 
-        // 3. Slider Images (Fetch Once)
+        // Slider
         getDoc(doc(db, "app_settings", "slider")).then(snap => {
             if(snap.exists()) {
                 const imgs = snap.data().images || [];
@@ -438,21 +466,25 @@
         try {
             await deleteDoc(doc(db, colName, id));
             showToast("ডিলিট সফল!");
-        } catch (e) {
-            showToast("ডিলিট ব্যর্থ", "error");
-        }
+        } catch (e) { showToast("ডিলিট ব্যর্থ", "error"); }
         toggleLoading(false);
     }
 
     // -- RESET FORM --
     window.resetForm = (type) => {
-        if(type === 'question') {
+        if(type === 'ebook') {
+            document.getElementById("editIdEbook").value = "";
+            document.getElementById("urlEbook").value = "";
+            document.getElementById("fileEbook").value = "";
+            document.getElementById("btnSaveEbook").innerText = "পেজ যোগ করুন";
+            document.getElementById("btnCancelEbook").classList.add("hidden");
+        }
+        else if(type === 'question') {
             document.getElementById("editIdQ").value = "";
             document.getElementById("qTitle").value = "";
             document.getElementById("qAns").value = "";
             document.getElementById("urlQ").value = "";
             document.getElementById("btnSaveQ").innerText = "প্রশ্ন যোগ করুন";
-            document.getElementById("btnSaveQ").className = "btn btn-info text-white";
             document.getElementById("btnCancelQ").classList.add("hidden");
         }
         else if(type === 'mcq') {
@@ -461,7 +493,6 @@
             ['opt1','opt2','opt3','opt4'].forEach(id => document.getElementById(id).value = "");
             document.getElementById("mcqCorrect").value = "1";
             document.getElementById("btnSaveMCQ").innerText = "MCQ সেভ করুন";
-            document.getElementById("btnSaveMCQ").className = "btn btn-warning";
             document.getElementById("btnCancelMCQ").classList.add("hidden");
         }
         else if(type === 'truefalse') {
@@ -469,7 +500,6 @@
             document.getElementById("tfTitle").value = "";
             document.getElementById("tfCorrect").value = "সত্য";
             document.getElementById("btnSaveTF").innerText = "সেভ করুন";
-            document.getElementById("btnSaveTF").className = "btn btn-success";
             document.getElementById("btnCancelTF").classList.add("hidden");
         }
         else if(type === 'translate') {
@@ -477,25 +507,56 @@
             document.getElementById("transBn").value = "";
             document.getElementById("transEn").value = "";
             document.getElementById("btnSaveTrans").innerText = "অনুবাদ যোগ করুন";
-            document.getElementById("btnSaveTrans").className = "btn btn-dark";
             document.getElementById("btnCancelTrans").classList.add("hidden");
         }
     }
 
-    // -- SAVE / UPDATE FUNCTIONS --
+    // -- EBOOK SAVE FUNCTION (NEW) --
+    window.editEbook = (id, img) => {
+        document.getElementById("editIdEbook").value = id;
+        document.getElementById("urlEbook").value = img;
+        document.getElementById("btnSaveEbook").innerText = "আপডেট করুন";
+        document.getElementById("btnCancelEbook").classList.remove("hidden");
+        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
+    }
 
-    // 1. Question
+    window.saveEbook = async () => {
+        const id = document.getElementById("editIdEbook").value;
+        const img = document.getElementById("urlEbook").value;
+
+        if(!img) return showToast("ইমেজ আপলোড করুন", "error");
+
+        toggleLoading(true);
+        try {
+            const data = {
+                type: 'ebook',
+                image: img,
+                createdAt: Timestamp.now()
+            };
+
+            if(id) {
+                // আপডেট করার সময় Timestamp চেঞ্জ হবে না যাতে অর্ডার ঠিক থাকে
+                delete data.createdAt; 
+                await updateDoc(doc(db, "contents", id), data);
+                showToast("পেজ আপডেট হয়েছে!");
+            } else {
+                await addDoc(collection(db, "contents"), data);
+                showToast("নতুন পেজ যোগ হয়েছে!");
+            }
+            resetForm('ebook');
+        } catch (e) { showToast("ব্যর্থ: " + e.message, "error"); }
+        toggleLoading(false);
+    }
+
+    // -- OTHER SAVE FUNCTIONS --
     window.editQuestion = (id, q, a, img) => {
         document.getElementById("editIdQ").value = id;
         document.getElementById("qTitle").value = decodeURIComponent(q);
         document.getElementById("qAns").value = decodeURIComponent(a);
         document.getElementById("urlQ").value = img;
-        
         document.getElementById("btnSaveQ").innerText = "আপডেট করুন";
-        document.getElementById("btnSaveQ").className = "btn btn-primary";
         document.getElementById("btnCancelQ").classList.remove("hidden");
-        document.body.scrollTop = 0; 
-        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
     }
 
     window.saveQuestion = async () => {
@@ -503,52 +564,28 @@
         const q = document.getElementById("qTitle").value;
         const a = document.getElementById("qAns").value;
         const img = document.getElementById("urlQ").value;
-
         if(!q || !a) return showToast("প্রশ্ন ও উত্তর লিখুন", "error");
-
         toggleLoading(true);
         try {
-            const data = {
-                type: 'question',
-                question: q,
-                answer: a,
-                image: img || null,
-                createdAt: Timestamp.now()
-            };
-
-            if(id) {
-                // Update
-                delete data.createdAt; // Don't update timestamp
-                await updateDoc(doc(db, "contents", id), data);
-                showToast("আপডেট সফল!");
-            } else {
-                // Add
-                await addDoc(collection(db, "contents"), data);
-                showToast("প্রশ্ন যোগ হয়েছে!");
-            }
+            const data = { type: 'question', question: q, answer: a, image: img || null, createdAt: Timestamp.now() };
+            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("আপডেট সফল!"); }
+            else { await addDoc(collection(db, "contents"), data); showToast("প্রশ্ন যোগ হয়েছে!"); }
             resetForm('question');
-        } catch (e) { showToast("ব্যর্থ: " + e.message, "error"); }
+        } catch (e) { showToast("ব্যর্থ", "error"); }
         toggleLoading(false);
     }
 
-    // 2. MCQ
     window.editMCQ = (id, q, options, correct) => {
         document.getElementById("editIdMCQ").value = id;
         document.getElementById("mcqTitle").value = decodeURIComponent(q);
-        
         const decodedCorrect = decodeURIComponent(correct);
-        
         if(options[0]) document.getElementById("opt1").value = options[0];
         if(options[1]) document.getElementById("opt2").value = options[1];
         if(options[2]) document.getElementById("opt3").value = options[2];
         if(options[3]) document.getElementById("opt4").value = options[3];
-
-        // Find correct index
         let correctIndex = options.indexOf(decodedCorrect) + 1;
         if(correctIndex > 0) document.getElementById("mcqCorrect").value = correctIndex;
-
         document.getElementById("btnSaveMCQ").innerText = "আপডেট করুন";
-        document.getElementById("btnSaveMCQ").className = "btn btn-primary";
         document.getElementById("btnCancelMCQ").classList.remove("hidden");
         document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
     }
@@ -561,45 +598,25 @@
         const o3 = document.getElementById("opt3").value;
         const o4 = document.getElementById("opt4").value;
         const correctIndex = document.getElementById("mcqCorrect").value;
-
         if(!q || !o1 || !o2) return showToast("প্রশ্ন ও অন্তত ২টি অপশন দিন", "error");
-        
         const options = [o1, o2, o3, o4].filter(o => o);
         const correctValue = options[parseInt(correctIndex)-1];
-
         if(!correctValue) return showToast("সঠিক উত্তরটি অপশনে নেই", "error");
-
         toggleLoading(true);
         try {
-            const data = {
-                type: 'mcq',
-                question: q,
-                options: options,
-                correct: correctValue,
-                createdAt: Timestamp.now()
-            };
-
-            if(id) {
-                delete data.createdAt;
-                await updateDoc(doc(db, "contents", id), data);
-                showToast("MCQ আপডেট হয়েছে!");
-            } else {
-                await addDoc(collection(db, "contents"), data);
-                showToast("MCQ যোগ হয়েছে!");
-            }
+            const data = { type: 'mcq', question: q, options: options, correct: correctValue, createdAt: Timestamp.now() };
+            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("MCQ আপডেট হয়েছে!"); }
+            else { await addDoc(collection(db, "contents"), data); showToast("MCQ যোগ হয়েছে!"); }
             resetForm('mcq');
         } catch (e) { showToast("ব্যর্থ", "error"); }
         toggleLoading(false);
     }
 
-    // 3. True/False
     window.editTF = (id, q, correct) => {
         document.getElementById("editIdTF").value = id;
         document.getElementById("tfTitle").value = decodeURIComponent(q);
         document.getElementById("tfCorrect").value = correct;
-
         document.getElementById("btnSaveTF").innerText = "আপডেট করুন";
-        document.getElementById("btnSaveTF").className = "btn btn-primary";
         document.getElementById("btnCancelTF").classList.remove("hidden");
         document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
     }
@@ -608,40 +625,22 @@
         const id = document.getElementById("editIdTF").value;
         const title = document.getElementById("tfTitle").value;
         const correctVal = document.getElementById("tfCorrect").value;
-
         if(!title) return showToast("বাক্য লিখুন", "error");
-
         toggleLoading(true);
         try {
-            const data = {
-                type: 'truefalse',
-                question: title,
-                options: ["সত্য", "মিথ্যা"],
-                correct: correctVal,
-                createdAt: Timestamp.now()
-            };
-
-            if(id) {
-                delete data.createdAt;
-                await updateDoc(doc(db, "contents", id), data);
-                showToast("আপডেট হয়েছে!");
-            } else {
-                await addDoc(collection(db, "contents"), data);
-                showToast("যোগ হয়েছে!");
-            }
+            const data = { type: 'truefalse', question: title, options: ["সত্য", "মিথ্যা"], correct: correctVal, createdAt: Timestamp.now() };
+            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("আপডেট হয়েছে!"); }
+            else { await addDoc(collection(db, "contents"), data); showToast("যোগ হয়েছে!"); }
             resetForm('truefalse');
         } catch (e) { showToast("ব্যর্থ", "error"); }
         toggleLoading(false);
     }
 
-    // 4. Translate
     window.editTrans = (id, bn, en) => {
         document.getElementById("editIdTrans").value = id;
         document.getElementById("transBn").value = decodeURIComponent(bn);
         document.getElementById("transEn").value = decodeURIComponent(en);
-
         document.getElementById("btnSaveTrans").innerText = "আপডেট করুন";
-        document.getElementById("btnSaveTrans").className = "btn btn-primary";
         document.getElementById("btnCancelTrans").classList.remove("hidden");
         document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
     }
@@ -650,68 +649,38 @@
         const id = document.getElementById("editIdTrans").value;
         const bn = document.getElementById("transBn").value;
         const en = document.getElementById("transEn").value;
-
         if(!bn || !en) return showToast("উভয় বাক্য লিখুন", "error");
-
         toggleLoading(true);
         try {
-            const data = {
-                type: 'translate',
-                question: bn,
-                answer: en,
-                createdAt: Timestamp.now()
-            };
-
-            if(id) {
-                delete data.createdAt;
-                await updateDoc(doc(db, "contents", id), data);
-                showToast("অনুবাদ আপডেট হয়েছে!");
-            } else {
-                await addDoc(collection(db, "contents"), data);
-                showToast("অনুবাদ যোগ হয়েছে!");
-            }
+            const data = { type: 'translate', question: bn, answer: en, createdAt: Timestamp.now() };
+            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("অনুবাদ আপডেট হয়েছে!"); }
+            else { await addDoc(collection(db, "contents"), data); showToast("অনুবাদ যোগ হয়েছে!"); }
             resetForm('translate');
         } catch (e) { showToast("ব্যর্থ", "error"); }
         toggleLoading(false);
     }
 
-    // 5. Generate Key
     window.generateKey = async () => {
         const days = document.getElementById("keyDuration").value;
         const newKey = "AUTO-" + Math.floor(100000 + Math.random() * 900000); 
-
         toggleLoading(true);
         try {
-            await addDoc(collection(db, "activation_keys"), {
-                key: newKey,
-                days: parseInt(days),
-                used: false,
-                createdAt: Timestamp.now()
-            });
+            await addDoc(collection(db, "activation_keys"), { key: newKey, days: parseInt(days), used: false, createdAt: Timestamp.now() });
             document.getElementById("newKeyDisplay").innerText = newKey;
             document.getElementById("keyResult").classList.remove("hidden");
             showToast("নতুন কি তৈরি হয়েছে!");
-        } catch (e) {
-            showToast("এরর হয়েছে", "error");
-        } finally {
-            toggleLoading(false);
-        }
+        } catch (e) { showToast("এরর হয়েছে", "error"); } finally { toggleLoading(false); }
     }
 
-    // 6. Update Slider (Existing Logic)
     window.updateSlider = async () => {
         const u1 = document.getElementById("urlSlide1").value;
         const u2 = document.getElementById("urlSlide2").value;
         const u3 = document.getElementById("urlSlide3").value;
-
         if(!u1) return showToast("অন্তত প্রথম স্লাইড দিতে হবে", "error");
         const images = [u1, u2, u3].filter(i => i);
-        
         toggleLoading(true);
-        try {
-            await setDoc(doc(db, "app_settings", "slider"), { images });
-            showToast("স্লাইডার আপডেট সফল!");
-        } catch (e) { showToast("ব্যর্থ", "error"); }
+        try { await setDoc(doc(db, "app_settings", "slider"), { images }); showToast("স্লাইডার আপডেট সফল!"); }
+        catch (e) { showToast("ব্যর্থ", "error"); }
         toggleLoading(false);
     }
 

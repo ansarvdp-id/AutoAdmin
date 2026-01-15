@@ -3,262 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>অ্যাডমিন প্যানেল - অটো মেকানিক</title>
+    <title>অটো মেকানিক ই-এক্সাম</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Toastify CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
     <style>
-        body { background-color: #f0f2f5; font-family: 'Kalpurush', sans-serif; }
-        .sidebar { min-height: 100vh; background: #343a40; color: white; }
-        .nav-link { color: rgba(255,255,255,.8); cursor: pointer; margin-bottom: 5px; }
-        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,0.1); border-radius: 5px; }
-        .card { border: none; shadow-sm: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;600&display=swap');
+        
+        body { background-color: #f4f6f9; font-family: 'Hind Siliguri', 'Arial', sans-serif; }
+        .app-container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        /* Top Bar */
+        .top-bar { background: #2c3e50; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .profile-img-top { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+        
+        /* Notification Badge */
+        .notification-btn { position: relative; cursor: pointer; margin-right: 10px; color: white; font-size: 18px;}
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; display: none; }
+        
         .hidden { display: none !important; }
-        .item-list { max-height: 500px; overflow-y: auto; }
-        .list-group-item { display: flex; justify-content: space-between; align-items: center; }
-        .action-btn { cursor: pointer; margin-left: 10px; }
-        .ebook-thumb { width: 60px; height: 80px; object-fit: cover; border: 1px solid #ddd; margin-right: 15px; border-radius: 4px; }
+        .auth-box { padding: 30px; margin-top: 50px; }
+        
+        /* Menu & Slider */
+        .slider-wrapper { position: relative; width: 100%; padding-top: 56.25%; overflow: hidden; }
+        .slider-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Exam Styles */
+        .timer-bar { position: sticky; top: 55px; background: #dc3545; color: white; padding: 8px; text-align: center; z-index: 99; font-weight: bold; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .exam-locked-overlay { background: #fff3cd; color: #856404; padding: 20px; text-align: center; border: 1px solid #ffeeba; border-radius: 10px; margin: 20px; }
+        .exam-status-overlay { background: #d1e7dd; color: #0f5132; padding: 20px; text-align: center; border: 1px solid #badbcc; border-radius: 10px; margin: 20px; }
+        .question-card { border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fff; }
+
+        /* Loading Overlay */
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        .mcq-option { cursor: pointer; padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; }
+        .mcq-option:hover { background: #e9ecef; }
+        
+        /* --- FIXED PRINT STYLES --- */
+        @media print {
+            body { background-color: white; }
+            .app-container, .no-print, .modal, .toastify { display: none !important; }
+            
+            #printableArea { 
+                display: block !important; 
+                position: absolute; 
+                top: 0; 
+                left: 0; 
+                width: 100%;
+                z-index: 9999;
+                padding: 40px;
+                background: white;
+            }
+            .print-item { page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+        }
     </style>
 </head>
 <body>
 
-<!-- Loading Spinner -->
-<div id="loading" class="loading-overlay hidden">
-    <div class="spinner-border text-primary" role="status"></div>
-</div>
-
-<!-- Login Section -->
-<div id="loginSection" class="container mt-5" style="max-width: 400px;">
-    <div class="card p-4">
-        <h3 class="text-center mb-4">অ্যাডমিন লগইন</h3>
-        <input type="email" id="adminEmail" class="form-control mb-3" placeholder="অ্যাডমিন ইমেইল">
-        <input type="password" id="adminPass" class="form-control mb-3" placeholder="পাসওয়ার্ড">
-        <button onclick="adminLogin()" class="btn btn-dark w-100">প্রবেশ করুন</button>
+<div class="app-container">
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading-overlay hidden">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted small" id="loadingText">অপেক্ষা করুন...</p>
     </div>
-</div>
 
-<!-- Dashboard Section -->
-<div id="dashboardSection" class="container-fluid hidden">
-    <div class="row">
-        <!-- Sidebar -->
-        <nav class="col-md-3 col-lg-2 d-md-block sidebar p-3 collapse show" id="sidebarMenu">
-            <h5 class="mb-4 py-2 border-bottom">🔧 মেকানিক অ্যাডমিন</h5>
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link active" onclick="showTab('keys')"><i class="fas fa-key me-2"></i> অ্যাক্টিভেশন কি</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showTab('slider')"><i class="fas fa-images me-2"></i> স্লাইডার ইমেজ</a></li>
-                <!-- New Ebook Option -->
-                <li class="nav-item"><a class="nav-link" onclick="showTab('ebook')"><i class="fas fa-book-open me-2"></i> ই-বুক (Ebook)</a></li>
-                
-                <li class="nav-item"><a class="nav-link" onclick="showTab('questions')"><i class="fas fa-question-circle me-2"></i> প্রশ্ন (General)</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showTab('mcq')"><i class="fas fa-list-check me-2"></i> MCQ</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showTab('truefalse')"><i class="fas fa-check-square me-2"></i> সত্য/মিথ্যা</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showTab('translate')"><i class="fas fa-language me-2"></i> ট্রান্সলেট</a></li>
-                <li class="nav-item mt-5"><a class="nav-link text-danger" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> লগআউট</a></li>
-            </ul>
-        </nav>
+    <!-- Top Navigation -->
+    <div id="navBar" class="top-bar hidden no-print">
+        <div class="d-flex align-items-center">
+            <span class="fw-bold me-2"><i class="fas fa-edit"></i> মেকানিক e-Exam</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Notification Bell -->
+            <div class="notification-btn" onclick="showNotification()">
+                <i class="fas fa-bell"></i>
+                <span id="notifBadge" class="notif-badge">!</span>
+            </div>
 
-        <!-- Main Content -->
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex flex-column align-items-end" style="line-height: 1.2;">
+                <span id="navUserName" style="font-size: 12px; font-weight: bold;">User</span>
+                <span id="navUserId" style="font-size: 10px; color: #ddd;">ID: ...</span>
+            </div>
+            <img src="https://via.placeholder.com/40" id="navProfileImg" class="profile-img-top" alt="Profile">
+            <button onclick="logout()" class="btn btn-sm btn-danger py-0 px-2" style="height: 30px;"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </div>
+
+    <!-- AUTHENTICATION SECTION -->
+    <div id="authSection" class="no-print">
+        <!-- Login Form -->
+        <div id="loginView" class="auth-box">
+            <div class="text-center mb-4">
+                <i class="fas fa-user-graduate fa-3x text-primary"></i>
+                <h3 class="mt-2">লগইন করুন</h3>
+            </div>
+            <div class="mb-3">
+                <label>ইমেইল</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="example@gmail.com">
+            </div>
+            <div class="mb-3">
+                <label>পাসওয়ার্ড</label>
+                <input type="password" id="loginPass" class="form-control" placeholder="******">
+            </div>
+            <button onclick="handleLogin()" class="btn btn-primary w-100">লগইন</button>
+            <p class="mt-3 text-center">একাউন্ট নেই? <a href="#" onclick="switchView('signup')">সাইন আপ করুন</a></p>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signupView" class="auth-box hidden">
+            <h3 class="text-center mb-4">নতুন একাউন্ট (সাইন আপ)</h3>
+            <div class="mb-2">
+                <label>পুরো নাম</label>
+                <input type="text" id="regName" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label>জেলা নির্বাচন করুন</label>
+                <select id="regDistrict" class="form-control">
+                    <option value="">লোডিং...</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>জন্ম তারিখ</label>
+                <input type="date" id="regDob" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label>ইমেইল</label>
+                <input type="email" id="regEmail" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label>পাসওয়ার্ড</label>
+                <input type="password" id="regPass" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label>প্রোফাইল ছবি</label>
+                <input type="file" id="regImage" class="form-control" accept="image/*">
+            </div>
+            <button onclick="handleSignup()" class="btn btn-success w-100">রেজিস্ট্রেশন করুন</button>
+            <p class="mt-3 text-center">আগেই একাউন্ট আছে? <a href="#" onclick="switchView('login')">লগইন করুন</a></p>
+        </div>
+    </div>
+
+    <!-- VERIFICATION SECTION -->
+    <div id="verificationSection" class="auth-box hidden no-print">
+        <div class="text-center">
+            <i class="fas fa-lock fa-3x text-warning mb-3"></i>
+            <h4>অ্যাক্টিভেশন প্রয়োজন</h4>
+            <p class="text-muted">আপনার অ্যাকাউন্টের মেয়াদ শেষ বা নতুন। অনুগ্রহ করে অ্যাক্টিভ কী (Active Key) দিন।</p>
+            <input type="text" id="licenseKeyInput" class="form-control mb-3 text-center" placeholder="Enter Activation Key">
+            <button onclick="verifyKey()" class="btn btn-warning w-100">ভেরিফাই করুন</button>
+            <p id="licenseMsg" class="mt-2 text-danger small"></p>
+        </div>
+    </div>
+
+    <!-- HOME DASHBOARD (ONLY EXAM) -->
+    <div id="homeSection" class="hidden no-print">
+        <!-- Slider -->
+        <div id="carouselExample" class="carousel slide mb-3" data-bs-ride="carousel">
+            <div class="carousel-inner" id="sliderContainer">
+                <div class="carousel-item active">
+                    <div class="slider-wrapper">
+                        <img src="https://via.placeholder.com/640x360?text=Auto+Mechanic+Exam" class="slider-img" alt="...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expiry Status -->
+        <div class="text-center mb-3">
+            <span class="badge bg-info text-dark" id="expiryDisplay"></span>
+        </div>
+
+        <!-- EXAM STATUS SECTION -->
+        <div id="examSection" class="px-3">
             
-            <!-- Generate Keys Tab -->
-            <div id="tab-keys" class="content-tab">
-                <h3>🔑 লাইসেন্স কি তৈরি করুন</h3>
-                <div class="card p-4 mt-3" style="max-width: 500px;">
-                    <label class="form-label">মেয়াদ নির্বাচন করুন</label>
-                    <select id="keyDuration" class="form-select mb-3">
-                        <option value="7">৭ দিন</option>
-                        <option value="10">১০ দিন</option>
-                        <option value="15">১৫ দিন</option>
-                        <option value="30">৩০ দিন</option>
-                    </select>
-                    <button onclick="generateKey()" class="btn btn-success">জেনারেট কি (Generate Key)</button>
-                    
-                    <div id="keyResult" class="alert alert-success mt-3 hidden">
-                        <h4 id="newKeyDisplay" class="fw-bold"></h4>
-                        <p class="mb-0">এই কি টি কপি করে ইউজারকে দিন।</p>
-                    </div>
-                </div>
-                <h5 class="mt-4">সাম্প্রতিক কী (Keys)</h5>
-                <ul class="list-group" id="keyListArea"></ul>
+            <!-- Message when Exam is OFF -->
+            <div id="noExamMessage" class="text-center mt-4 hidden">
+                <i class="fas fa-mug-hot fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">বর্তমানে কোনো পরীক্ষা চালু নেই</h5>
+                <p class="small text-muted">এডমিন পরীক্ষা চালু করলে এখানে নোটিফিকেশন দেখতে পাবেন।</p>
             </div>
 
-            <!-- Slider Tab -->
-            <div id="tab-slider" class="content-tab hidden">
-                <h3>🖼️ অ্যাপ স্লাইডার আপডেট</h3>
-                <div class="card p-4 mt-3">
-                    <p class="text-muted">ইমেজ আপলোড করুন অথবা সরাসরি লিংক দিন।</p>
-                    <div class="mb-3">
-                        <label>স্লাইড ১</label>
-                        <div class="input-group">
-                            <input type="file" class="form-control" id="fileSlide1">
-                            <button class="btn btn-outline-secondary" onclick="uploadImage('fileSlide1', 'urlSlide1')">আপলোড</button>
-                        </div>
-                        <input type="text" id="urlSlide1" class="form-control mt-1" placeholder="Image URL">
-                    </div>
-                    <div class="mb-3">
-                        <label>স্লাইড ২</label>
-                        <div class="input-group">
-                            <input type="file" class="form-control" id="fileSlide2">
-                            <button class="btn btn-outline-secondary" onclick="uploadImage('fileSlide2', 'urlSlide2')">আপলোড</button>
-                        </div>
-                        <input type="text" id="urlSlide2" class="form-control mt-1" placeholder="Image URL">
-                    </div>
-                    <div class="mb-3">
-                        <label>স্লাইড ৩</label>
-                        <div class="input-group">
-                            <input type="file" class="form-control" id="fileSlide3">
-                            <button class="btn btn-outline-secondary" onclick="uploadImage('fileSlide3', 'urlSlide3')">আপলোড</button>
-                        </div>
-                        <input type="text" id="urlSlide3" class="form-control mt-1" placeholder="Image URL">
-                    </div>
-                    <button onclick="updateSlider()" class="btn btn-primary">স্লাইডার আপডেট করুন</button>
-                </div>
+            <!-- 1. Exam Locked -->
+            <div id="examActiveAlert" class="exam-locked-overlay hidden">
+                <i class="fas fa-clock fa-3x mb-3 text-danger animate__animated animate__pulse animate__infinite"></i>
+                <h4 class="fw-bold">eExam চলছে!</h4>
+                <p class="mb-1">এখন পরীক্ষার সময়।</p>
+                <p class="small text-muted mb-3" id="examMetaDisplay">সময়: ৩০ মি. | মার্ক: ৫০</p>
+                <button onclick="startExamIntro()" class="btn btn-danger w-100 fw-bold shadow">
+                    <i class="fas fa-pen-nib"></i> পরীক্ষায় অংশ নিন
+                </button>
             </div>
 
-            <!-- EBOOK TAB (UPDATED) -->
-            <div id="tab-ebook" class="content-tab hidden">
-                <h3>📘 ই-বুক পেজ ম্যানেজমেন্ট</h3>
-                
-                <!-- Instruction Box -->
-                <div class="alert alert-info border-start border-4 border-info">
-                    <strong>আপলোড নিয়মাবলী (ধারাবাহিকতা বজায় রাখুন):</strong>
-                    <ul class="mb-0 small" style="list-style-type: none; padding-left: 0;">
-                        <li>📌 <strong>১ম ইমেজ:</strong> কভার পেজ (Cover Page)</li>
-                        <li>📌 <strong>২য় ইমেজ:</strong> সূচিপত্র (Index Page)</li>
-                        <li>📌 <strong>৩য় ইমেজ থেকে:</strong> মূল বইয়ের পৃষ্ঠা ১ থেকে শুরু...</li>
-                    </ul>
-                </div>
-
-                <div class="card p-4 mt-3">
-                    <input type="hidden" id="editIdEbook">
-                    <label>ই-বুক পেজ ইমেজ (Upload Image)</label>
-                    <div class="input-group mb-3">
-                        <input type="file" class="form-control" id="fileEbook">
-                        <button class="btn btn-outline-secondary" onclick="uploadImage('fileEbook', 'urlEbook')">আপলোড</button>
-                    </div>
-                    <input type="text" id="urlEbook" class="form-control mb-3" placeholder="ইমেজ লিংক...">
-                    
-                    <div class="d-flex gap-2">
-                        <button onclick="saveEbook()" id="btnSaveEbook" class="btn btn-primary">পেজ যোগ করুন</button>
-                        <button onclick="resetForm('ebook')" id="btnCancelEbook" class="btn btn-secondary hidden">বাতিল</button>
-                    </div>
-                </div>
-
-                <h5 class="mt-4">সংরক্ষিত পেজসমূহ (ক্রম অনুযায়ী):</h5>
-                <div class="list-group item-list" id="listEbook">Loading...</div>
+            <!-- 2. Exam Taken -->
+            <div id="examSubmittedAlert" class="exam-status-overlay hidden">
+                <i class="fas fa-clipboard-check fa-3x mb-3 text-success"></i>
+                <h5 class="fw-bold">পরীক্ষা সম্পন্ন হয়েছে!</h5>
+                <p class="small">আপনার উত্তরপত্র জমা হয়েছে। এডমিন ফলাফল প্রকাশ করা পর্যন্ত অপেক্ষা করুন।</p>
+                <button onclick="downloadMyResult()" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-download"></i> উত্তরপত্র ডাউনলোড
+                </button>
             </div>
+        </div>
+        <!-- Menu Grid REMOVED -->
+    </div>
 
-            <!-- Questions Tab -->
-            <div id="tab-questions" class="content-tab hidden">
-                <h3>❓ সাধারণ প্রশ্ন যোগ/এডিট করুন</h3>
-                <div class="card p-4 mt-3">
-                    <input type="hidden" id="editIdQ">
-                    <input type="text" id="qTitle" class="form-control mb-2" placeholder="প্রশ্ন লিখুন...">
-                    <textarea id="qAns" class="form-control mb-2" rows="4" placeholder="উত্তর লিখুন..."></textarea>
-                    
-                    <label>ছবি (অপশনাল)</label>
-                    <div class="input-group mb-3">
-                        <input type="file" class="form-control" id="fileQ">
-                        <button class="btn btn-outline-secondary" onclick="uploadImage('fileQ', 'urlQ')">আপলোড</button>
-                    </div>
-                    <input type="text" id="urlQ" class="form-control mb-3" placeholder="ছবির লিংক এখানে আসবে">
-                    
-                    <div class="d-flex gap-2">
-                        <button onclick="saveQuestion()" id="btnSaveQ" class="btn btn-info text-white">প্রশ্ন যোগ করুন</button>
-                        <button onclick="resetForm('question')" id="btnCancelQ" class="btn btn-secondary hidden">বাতিল</button>
+    <!-- EXAM INTERFACE -->
+    <div id="examPage" class="hidden no-print" style="background: white; min-height: 100vh;">
+        <div id="examTimerBar" class="timer-bar">
+            সময় বাকি: <span id="timerDisplay">00:00</span>
+        </div>
+        <div class="p-3">
+            <h5 class="text-center fw-bold mb-4">ফাইনাল পরীক্ষা</h5>
+            <form id="examForm">
+                <div id="examQuestionsContainer"></div>
+            </form>
+            <button onclick="submitExam(false)" class="btn btn-success w-100 mt-3 btn-lg fw-bold">
+                <i class="fas fa-paper-plane"></i> উত্তরপত্র জমা দিন
+            </button>
+        </div>
+    </div>
+
+    <!-- EXAM SUCCESS PAGE -->
+    <div id="examSuccessPage" class="hidden auth-box text-center no-print">
+        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+        <h4>উত্তরপত্র জমা হয়েছে!</h4>
+        <p class="text-muted">আপনার উত্তর এডমিনের কাছে পাঠানো হয়েছে।</p>
+        <button onclick="printResult()" class="btn btn-warning w-100 mb-2 fw-bold">
+            <i class="fas fa-print"></i> উত্তরপত্র সেভ করুন (PDF)
+        </button>
+        <button onclick="window.location.reload()" class="btn btn-outline-secondary w-100">
+            হোম পেজে যান
+        </button>
+    </div>
+
+    <!-- Notification Modal -->
+    <div class="modal fade" id="notifModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">নোটিফিকেশন</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="notifContent">
+                        <p class="text-muted">কোন নতুন নোটিফিকেশন নেই</p>
                     </div>
                 </div>
-                <h5 class="mt-4">সংরক্ষিত প্রশ্নসমূহ:</h5>
-                <div class="list-group item-list" id="listQuestions">Loading...</div>
             </div>
+        </div>
+    </div>
 
-            <!-- MCQ Tab -->
-            <div id="tab-mcq" class="content-tab hidden">
-                <h3>📝 MCQ যোগ/এডিট করুন</h3>
-                <div class="card p-4 mt-3">
-                    <input type="hidden" id="editIdMCQ">
-                    <input type="text" id="mcqTitle" class="form-control mb-3" placeholder="MCQ প্রশ্ন...">
-                    <div class="row g-2 mb-3">
-                        <div class="col-6"><input type="text" id="opt1" class="form-control" placeholder="অপশন ১"></div>
-                        <div class="col-6"><input type="text" id="opt2" class="form-control" placeholder="অপশন ২"></div>
-                        <div class="col-6"><input type="text" id="opt3" class="form-control" placeholder="অপশন ৩"></div>
-                        <div class="col-6"><input type="text" id="opt4" class="form-control" placeholder="অপশন ৪"></div>
-                    </div>
-                    <label>সঠিক উত্তর কোনটি?</label>
-                    <select id="mcqCorrect" class="form-select mb-3">
-                        <option value="1">অপশন ১</option>
-                        <option value="2">অপশন ২</option>
-                        <option value="3">অপশন ৩</option>
-                        <option value="4">অপশন ৪</option>
-                    </select>
-                    <div class="d-flex gap-2">
-                        <button onclick="saveMCQ()" id="btnSaveMCQ" class="btn btn-warning">MCQ সেভ করুন</button>
-                        <button onclick="resetForm('mcq')" id="btnCancelMCQ" class="btn btn-secondary hidden">বাতিল</button>
-                    </div>
-                </div>
-                <h5 class="mt-4">সংরক্ষিত MCQ:</h5>
-                <div class="list-group item-list" id="listMCQ">Loading...</div>
-            </div>
+</div>
 
-            <!-- True False Tab -->
-            <div id="tab-truefalse" class="content-tab hidden">
-                <h3>✅ সত্য / মিথ্যা যোগ/এডিট করুন</h3>
-                <div class="card p-4 mt-3">
-                    <input type="hidden" id="editIdTF">
-                    <input type="text" id="tfTitle" class="form-control mb-3" placeholder="বাক্যটি লিখুন...">
-                    <select id="tfCorrect" class="form-select mb-3">
-                        <option value="সত্য">সত্য (True)</option>
-                        <option value="মিথ্যা">মিথ্যা (False)</option>
-                    </select>
-                    <div class="d-flex gap-2">
-                        <button onclick="saveTrueFalse()" id="btnSaveTF" class="btn btn-success">সেভ করুন</button>
-                        <button onclick="resetForm('truefalse')" id="btnCancelTF" class="btn btn-secondary hidden">বাতিল</button>
-                    </div>
-                </div>
-                <h5 class="mt-4">সংরক্ষিত সত্য/মিথ্যা:</h5>
-                <div class="list-group item-list" id="listTF">Loading...</div>
-            </div>
-
-            <!-- Translate Tab -->
-             <div id="tab-translate" class="content-tab hidden">
-                <h3>🔤 অনুবাদ (Translate) যোগ/এডিট করুন</h3>
-                <div class="card p-4 mt-3">
-                    <input type="hidden" id="editIdTrans">
-                    <div class="mb-2">
-                        <label>বাংলা বাক্য</label>
-                        <input type="text" id="transBn" class="form-control" placeholder="আমি মেকানিক...">
-                    </div>
-                    <div class="mb-3">
-                        <label>ইংরেজি অনুবাদ</label>
-                        <input type="text" id="transEn" class="form-control" placeholder="I am a mechanic...">
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button onclick="saveTranslate()" id="btnSaveTrans" class="btn btn-dark">অনুবাদ যোগ করুন</button>
-                        <button onclick="resetForm('translate')" id="btnCancelTrans" class="btn btn-secondary hidden">বাতিল</button>
-                    </div>
-                </div>
-                <h5 class="mt-4">সংরক্ষিত অনুবাদ:</h5>
-                <div class="list-group item-list" id="listTranslate">Loading...</div>
-            </div>
-
-        </main>
+<!-- PRINTABLE AREA -->
+<div id="printableArea" class="hidden">
+    <div class="text-center border-bottom pb-3 mb-3">
+        <h2>অটো মেকানিক ই-এক্সাম</h2>
+        <p>উত্তরপত্র</p>
+    </div>
+    <div class="mb-3">
+        <p><strong>নাম:</strong> <span id="printName"></span></p>
+        <p><strong>আইডি:</strong> <span id="printId"></span></p>
+        <p><strong>তারিখ:</strong> <span id="printDate"></span></p>
+    </div>
+    <hr>
+    <div id="printContent">
+        <!-- Questions and Answers will appear here -->
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 <!-- Firebase SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, addDoc, Timestamp, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, Timestamp, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyBEfs_yi_U5AObahTTLQGK5Sj4k1wSBXb0",
+        apiKey: "AIzaSyBEfs_yi_U5AObahTTLQGK5Sj4k1wSBXb0", 
         authDomain: "ansar-vdp.firebaseapp.com",
         projectId: "ansar-vdp",
         storageBucket: "ansar-vdp.firebasestorage.app",
@@ -270,443 +299,448 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // -- UTILITIES --
-    window.showToast = (msg, type="success") => {
-        let bg = type === "error" ? "red" : "green";
-        Toastify({ text: msg, duration: 3000, style: { background: bg } }).showToast();
+    let currentUserData = null;
+    let examTimerInterval;
+    let examSubmissionData = [];
+
+    // --- HELPER FUNCTIONS ---
+    window.showToast = (msg, type="info") => {
+        let bg = type === "error" ? "#dc3545" : "#198754";
+        Toastify({ text: msg, duration: 3000, style: { background: bg }, gravity: "bottom" }).showToast();
     }
 
-    window.toggleLoading = (show) => {
+    window.toggleLoading = (show, text="অপেক্ষা করুন...") => {
+        document.getElementById("loadingText").innerText = text;
         document.getElementById("loading").classList.toggle("hidden", !show);
     }
 
-    window.showTab = (tabId) => {
-        document.querySelectorAll('.content-tab').forEach(el => el.classList.add('hidden'));
-        document.getElementById('tab-' + tabId).classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-        event.target.closest('.nav-link').classList.add('active');
-    }
+    window.switchView = (view) => {
+        // Removed 'contentPage' from views list
+        const views = ["loginView", "signupView", "homeSection", "verificationSection", "examPage", "examSuccessPage"];
+        views.forEach(v => document.getElementById(v)?.classList.add("hidden"));
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("printableArea").classList.add("hidden");
 
-    // -- AUTH --
-    window.adminLogin = async () => {
-        const email = document.getElementById("adminEmail").value;
-        const pass = document.getElementById("adminPass").value;
-        toggleLoading(true);
-        try {
-            const userCred = await signInWithEmailAndPassword(auth, email, pass);
-            checkIsAdmin(userCred.user.uid);
-        } catch (error) {
-            showToast("লগইন ব্যর্থ! ইমেইল বা পাসওয়ার্ড চেক করুন।", "error");
-            toggleLoading(false);
-        }
-    }
-
-    async function checkIsAdmin(uid) {
-        const userDoc = await getDoc(doc(db, "users", uid));
-        if(userDoc.exists() && userDoc.data().isAdmin === true) {
-            document.getElementById("loginSection").classList.add("hidden");
-            document.getElementById("dashboardSection").classList.remove("hidden");
-            showToast("অ্যাডমিন প্যানেলে স্বাগতম");
-            startListeners();
+        if(view === 'login' || view === 'signup') {
+            document.getElementById("authSection").classList.remove("hidden");
+            document.getElementById(view + "View").classList.remove("hidden");
+            if(view === 'signup') loadSignupDistricts();
+        } else if(view === 'home') {
+            document.getElementById("homeSection").classList.remove("hidden");
+            checkExamConfigAndStatus();
         } else {
-            showToast("আপনার অ্যাডমিন পারমিশন নেই!", "error");
-            signOut(auth);
+            document.getElementById(view).classList.remove("hidden");
         }
-        toggleLoading(false);
     }
 
-    onAuthStateChanged(auth, (user) => {
-        if(user) {
-            checkIsAdmin(user.uid);
-        } else {
-            document.getElementById("loginSection").classList.remove("hidden");
-            document.getElementById("dashboardSection").classList.add("hidden");
-        }
-    });
-
-    window.logout = () => { signOut(auth); }
-
-    // -- CLOUDINARY UPLOAD --
-    window.uploadImage = async (inputId, outputId) => {
-        const file = document.getElementById(inputId).files[0];
-        if(!file) return showToast("ছবি সিলেক্ট করুন", "error");
-
-        toggleLoading(true);
+    // --- CLOUDINARY UPLOAD ---
+    async function uploadToCloudinary(file) {
+        if(file.size > 2097152) throw new Error("ইমেজ সাইজ ২MB এর কম হতে হবে");
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", "ml_default");
         formData.append("cloud_name", "dntvrm1wn");
-
         try {
-            let res = await fetch("https://api.cloudinary.com/v1_1/dntvrm1wn/image/upload", {
-                method: "POST", body: formData
-            });
+            let res = await fetch("https://api.cloudinary.com/v1_1/dntvrm1wn/image/upload", { method: "POST", body: formData });
             let data = await res.json();
-            document.getElementById(outputId).value = data.secure_url;
-            showToast("ছবি আপলোড সফল!");
+            return data.secure_url;
+        } catch (error) { throw new Error("ইমেজ আপলোড ব্যর্থ হয়েছে"); }
+    }
+
+    // --- LOAD DISTRICTS ---
+    async function loadSignupDistricts() {
+        const select = document.getElementById("regDistrict");
+        select.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+        try {
+            const docRef = doc(db, "app_settings", "districts");
+            const docSnap = await getDoc(docRef);
+            select.innerHTML = '<option value="">জেলা নির্বাচন করুন...</option>';
+            if(docSnap.exists() && docSnap.data().list) {
+                const list = docSnap.data().list;
+                list.sort().forEach(dist => {
+                    const opt = document.createElement("option");
+                    opt.value = dist;
+                    opt.innerText = dist;
+                    select.appendChild(opt);
+                });
+            } else {
+                 const defaults = ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"];
+                 defaults.forEach(d => {
+                     const opt = document.createElement("option");
+                     opt.value = d; opt.innerText = d; select.appendChild(opt);
+                 });
+            }
+        } catch(e) {
+            console.error(e);
+            select.innerHTML = '<option value="">ডাটা লোড হয়নি</option>';
+        }
+    }
+
+    // --- AUTH ---
+    window.handleSignup = async () => {
+        const name = document.getElementById("regName").value;
+        const district = document.getElementById("regDistrict").value;
+        const dob = document.getElementById("regDob").value;
+        const email = document.getElementById("regEmail").value;
+        const pass = document.getElementById("regPass").value;
+        const imgFile = document.getElementById("regImage").files[0];
+
+        if(!name || !email || !pass || !district) return showToast("সকল তথ্য পূরণ করুন", "error");
+
+        toggleLoading(true, "আইডি তৈরি হচ্ছে...");
+        try {
+            let imgUrl = "https://via.placeholder.com/150";
+            if(imgFile) imgUrl = await uploadToCloudinary(imgFile);
+
+            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            const user = userCredential.user;
+            await updateProfile(user, { displayName: name, photoURL: imgUrl });
+
+            const counterRef = doc(db, "metadata", "user_counters");
+            let newSerialId = 100000;
+
+            await runTransaction(db, async (transaction) => {
+                const counterDoc = await transaction.get(counterRef);
+                if (!counterDoc.exists()) {
+                    newSerialId = 100001;
+                    transaction.set(counterRef, { lastId: 100001 });
+                } else {
+                    const lastId = counterDoc.data().lastId;
+                    newSerialId = lastId + 1;
+                    transaction.update(counterRef, { lastId: newSerialId });
+                }
+            });
+
+            await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid,
+                serialId: newSerialId, 
+                fullName: name,
+                district: district,
+                dob: dob,
+                email: email,
+                photoURL: imgUrl,
+                isAdmin: false,
+                licenseExpiry: null,
+                resultPublished: false
+            });
+
+            showToast(`রেজিস্ট্রেশন সফল! আপনার আইডি: ${newSerialId}`);
         } catch (error) {
-            showToast("আপলোড ব্যর্থ", "error");
-        } finally {
+            console.error(error);
+            showToast("সমস্যা হয়েছে: " + error.message, "error");
             toggleLoading(false);
         }
     }
 
-    // -- REALTIME DATA LISTENERS --
-    function startListeners() {
-        // Activation Keys
-        onSnapshot(query(collection(db, "activation_keys"), orderBy("createdAt", "desc")), (snapshot) => {
-            let html = "";
-            snapshot.forEach(doc => {
-                let d = doc.data();
-                html += `<li class="list-group-item">
-                    <span>${d.key} (${d.days} দিন) - ${d.used ? '<span class="text-danger">ব্যবহৃত</span>' : '<span class="text-success">অব্যবহৃত</span>'}</span>
-                    <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('activation_keys', '${doc.id}')"></i>
-                </li>`;
-            });
-            document.getElementById("keyListArea").innerHTML = html;
-        });
+    window.handleLogin = async () => {
+        const email = document.getElementById("loginEmail").value;
+        const pass = document.getElementById("loginPass").value;
+        if(!email || !pass) return showToast("ইমেইল ও পাসওয়ার্ড দিন", "error");
+        toggleLoading(true, "লগইন হচ্ছে...");
+        try { await signInWithEmailAndPassword(auth, email, pass); } 
+        catch (error) { showToast("ভুল ইমেইল বা পাসওয়ার্ড", "error"); toggleLoading(false); }
+    }
 
-        // Contents (All Types)
-        // Ebook Query: Must be ASC to maintain sequence (Cover -> Index -> Pages)
-        onSnapshot(query(collection(db, "contents"), orderBy("createdAt", "asc")), (snapshot) => {
-            let htmlQ = "", htmlMCQ = "", htmlTF = "", htmlTrans = "", htmlEbook = "";
-            
-            // Ebook Counters
-            let ebookIndex = 0; 
-            const toBangla = (n) => n.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+    window.logout = () => signOut(auth).then(() => window.location.reload());
 
-            snapshot.forEach(docSnap => {
-                let d = docSnap.data();
-                let id = docSnap.id;
-                
-                // --- EBOOK LOGIC (NEW) ---
-                if(d.type === 'ebook') {
-                    ebookIndex++; 
-                    let label = "";
-                    let badgeClass = "";
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            if(!currentUserData || currentUserData.uid !== user.uid) {
+                toggleLoading(true, "তথ্য লোড হচ্ছে...");
+                try {
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if(userDoc.exists()) {
+                        currentUserData = userDoc.data();
+                        
+                        document.getElementById("navBar").classList.remove("hidden");
+                        document.getElementById("navUserName").innerText = currentUserData.fullName;
+                        document.getElementById("navUserId").innerText = `ID: ${currentUserData.serialId || 'N/A'}`;
+                        document.getElementById("navProfileImg").src = currentUserData.photoURL;
 
-                    if(ebookIndex === 1) {
-                        label = "কভার পেজ (Cover Page)";
-                        badgeClass = "bg-primary";
-                    } else if (ebookIndex === 2) {
-                        label = "সূচিপত্র (Index/TOC)";
-                        badgeClass = "bg-info text-dark";
-                    } else {
-                        // Page starts from 1 (which is actual index 3)
-                        let pageNum = ebookIndex - 2;
-                        label = `মূল পেজ: ${toBangla(pageNum)}`;
-                        badgeClass = "bg-secondary";
+                        if(currentUserData.resultPublished) document.getElementById("notifBadge").style.display = "block";
+                        
+                        checkLicenseValidity();
                     }
+                } catch(e) { console.error(e); toggleLoading(false); }
+            } else { checkLicenseValidity(); }
+        } else { switchView('login'); toggleLoading(false); }
+    });
 
-                    htmlEbook += `
-                    <div class="list-group-item">
-                        <div class="d-flex align-items-center">
-                            <img src="${d.image}" class="ebook-thumb">
-                            <div>
-                                <span class="badge ${badgeClass} mb-1">${label}</span><br>
-                                <small class="text-muted">আপলোড: ${d.createdAt?.toDate().toLocaleDateString()}</small>
-                            </div>
-                        </div>
-                        <div>
-                            <i class="fas fa-edit text-primary action-btn" onclick="editEbook('${id}', '${d.image}')"></i>
-                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
-                        </div>
-                    </div>`;
+    // --- EXAM LOGIC ---
+    async function checkExamConfigAndStatus() {
+        try {
+            const settingsDoc = await getDoc(doc(db, "app_settings", "exam_config"));
+            const activeAlert = document.getElementById("examActiveAlert");
+            const submittedAlert = document.getElementById("examSubmittedAlert");
+            const noExamMsg = document.getElementById("noExamMessage");
+
+            // Reset UI
+            activeAlert.classList.add("hidden");
+            submittedAlert.classList.add("hidden");
+            noExamMsg.classList.add("hidden");
+
+            if(settingsDoc.exists() && settingsDoc.data().isOn) {
+                const config = settingsDoc.data();
+                window.examConfigData = config;
+
+                const subQuery = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
+                const subSnap = await getDocs(subQuery);
+
+                if (!subSnap.empty) {
+                    submittedAlert.classList.remove("hidden");
+                } else {
+                    activeAlert.classList.remove("hidden");
+                    document.getElementById("examMetaDisplay").innerText = `সময়: ${config.duration} মিনিট`;
+                }
+            } else {
+                // Exam is OFF
+                noExamMsg.classList.remove("hidden");
+            }
+        } catch(e) { console.error("Exam check error", e); }
+    }
+
+    window.startExamIntro = () => {
+        if(confirm("আপনি কি পরীক্ষা শুরু করতে প্রস্তুত?")) loadExamQuestions();
+    }
+
+    async function loadExamQuestions() {
+        toggleLoading(true, "প্রশ্নপত্র লোড হচ্ছে...");
+        switchView("examPage");
+        const container = document.getElementById("examQuestionsContainer");
+        container.innerHTML = "";
+        examSubmissionData = [];
+
+        try {
+            const qQuery = query(collection(db, "exam_questions"));
+            const querySnapshot = await getDocs(qQuery);
+
+            if(querySnapshot.empty) {
+                alert("প্রশ্ন পাওয়া যায়নি।");
+                switchView('home');
+                return;
+            }
+
+            let index = 1;
+            querySnapshot.forEach(doc => {
+                const q = doc.data();
+                const qId = doc.id;
+                
+                examSubmissionData.push({ 
+                    id: qId, 
+                    question: q.question, 
+                    type: q.type, 
+                    answer: "",
+                    image: q.image || null 
+                });
+
+                let imageHtml = "";
+                if(q.image) {
+                    imageHtml = `<div class="text-center mb-2">
+                                    <img src="${q.image}" class="img-fluid rounded border" style="max-height: 180px;">
+                                 </div>`;
                 }
 
-                // --- OTHER CONTENT (Reverse Order Logic) ---
-                // We prepend (new + old) to show latest first for these types
-                else if(d.type === 'question') {
-                    htmlQ = `
-                    <div class="list-group-item">
-                        <div>
-                            <strong>${d.question}</strong><br>
-                            <small class="text-muted">${d.answer.substring(0,50)}...</small>
-                        </div>
-                        <div>
-                            <i class="fas fa-edit text-primary action-btn" onclick="editQuestion('${id}', '${encodeURIComponent(d.question)}', '${encodeURIComponent(d.answer)}', '${d.image || ''}')"></i>
-                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
-                        </div>
-                    </div>` + htmlQ;
+                let html = `<div class="question-card">
+                    ${imageHtml}
+                    <h6 class="fw-bold">${index}. ${q.question}</h6>`;
+
+                if(q.type === 'mcq' || q.type === 'truefalse') {
+                    if(q.options && q.options.length > 0) {
+                        q.options.forEach((opt, idx) => {
+                            const uniqueId = `${qId}_${idx}`; 
+                            html += `
+                                <div class="form-check mt-2 mcq-option" onclick="document.getElementById('${uniqueId}').checked=true">
+                                    <input class="form-check-input" type="radio" name="${qId}" value="${opt}" id="${uniqueId}">
+                                    <label class="form-check-label w-100" style="cursor:pointer;" for="${uniqueId}">${opt}</label>
+                                </div>`;
+                        });
+                    } else {
+                        html += `<p class="text-danger small">কোন অপশন সেট করা নেই</p>`;
+                    }
+                } else {
+                    html += `<textarea class="form-control mt-2" name="${qId}" rows="2" placeholder="উত্তর..."></textarea>`;
                 }
-                else if(d.type === 'mcq') {
-                    let opts = JSON.stringify(d.options);
-                    htmlMCQ = `
-                    <div class="list-group-item">
-                        <div>
-                            <strong>${d.question}</strong><br>
-                            <small class="text-success">Correct: ${d.correct}</small>
-                        </div>
-                        <div>
-                            <i class="fas fa-edit text-primary action-btn" onclick='editMCQ("${id}", "${encodeURIComponent(d.question)}", ${opts}, "${encodeURIComponent(d.correct)}")'></i>
-                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
-                        </div>
-                    </div>` + htmlMCQ;
-                }
-                else if(d.type === 'truefalse') {
-                    htmlTF = `
-                    <div class="list-group-item">
-                        <div>${d.question} <span class="badge bg-secondary">${d.correct}</span></div>
-                        <div>
-                            <i class="fas fa-edit text-primary action-btn" onclick="editTF('${id}', '${encodeURIComponent(d.question)}', '${d.correct}')"></i>
-                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
-                        </div>
-                    </div>` + htmlTF;
-                }
-                else if(d.type === 'translate') {
-                    htmlTrans = `
-                    <div class="list-group-item">
-                        <div>${d.question} <i class="fas fa-arrow-right"></i> ${d.answer}</div>
-                        <div>
-                            <i class="fas fa-edit text-primary action-btn" onclick="editTrans('${id}', '${encodeURIComponent(d.question)}', '${encodeURIComponent(d.answer)}')"></i>
-                            <i class="fas fa-trash text-danger action-btn" onclick="deleteItem('contents', '${id}')"></i>
-                        </div>
-                    </div>` + htmlTrans;
-                }
+                html += `</div>`;
+                container.innerHTML += html;
+                index++;
             });
 
-            document.getElementById("listEbook").innerHTML = htmlEbook || "<p class='text-muted p-3'>কোনো পেজ নেই</p>";
-            document.getElementById("listQuestions").innerHTML = htmlQ || "<p class='text-muted p-3'>কোনো প্রশ্ন নেই</p>";
-            document.getElementById("listMCQ").innerHTML = htmlMCQ || "<p class='text-muted p-3'>কোনো MCQ নেই</p>";
-            document.getElementById("listTF").innerHTML = htmlTF || "<p class='text-muted p-3'>কোনো তথ্য নেই</p>";
-            document.getElementById("listTranslate").innerHTML = htmlTrans || "<p class='text-muted p-3'>কোনো অনুবাদ নেই</p>";
+            startTimer(window.examConfigData.duration);
+            toggleLoading(false);
+
+        } catch (error) { 
+            console.error(error);
+            switchView('home'); 
+        }
+    }
+
+    function startTimer(minutes) {
+        let time = minutes * 60;
+        const display = document.getElementById("timerDisplay");
+        examTimerInterval = setInterval(() => {
+            let m = Math.floor(time / 60);
+            let s = time % 60;
+            display.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            if (time <= 0) { clearInterval(examTimerInterval); submitExam(true); }
+            time--;
+        }, 1000);
+    }
+
+    window.submitExam = async (isAuto) => {
+        clearInterval(examTimerInterval);
+        toggleLoading(true, "জমা হচ্ছে...");
+
+        const form = document.getElementById("examForm");
+        const formData = new FormData(form);
+        let formattedAnswers = [];
+        
+        examSubmissionData.forEach(item => {
+            let val = formData.get(item.id) || (item.type === 'short' ? "উত্তর দেওয়া হয়নি" : "Selected None");
+            item.answer = val;
+            
+            formattedAnswers.push({
+                questionId: item.id,
+                questionTitle: item.question,
+                userAnswer: val,
+                obtainedMark: 0 
+            });
         });
 
-        // Slider
-        getDoc(doc(db, "app_settings", "slider")).then(snap => {
-            if(snap.exists()) {
-                const imgs = snap.data().images || [];
-                if(imgs[0]) document.getElementById("urlSlide1").value = imgs[0];
-                if(imgs[1]) document.getElementById("urlSlide2").value = imgs[1];
-                if(imgs[2]) document.getElementById("urlSlide3").value = imgs[2];
-            }
+        try {
+            await addDoc(collection(db, "exam_submissions"), {
+                uid: auth.currentUser.uid,
+                serialId: currentUserData.serialId,
+                name: currentUserData.fullName,
+                district: currentUserData.district,
+                submittedAt: Timestamp.now(),
+                answers: formattedAnswers,
+                totalScore: 0,
+                status: 'pending'
+            });
+
+            toggleLoading(false);
+            switchView('examSuccessPage');
+            preparePrintData(); 
+        } catch (error) {
+            showToast("এরর হয়েছে!", "error");
+            toggleLoading(false);
+        }
+    }
+
+    // --- PRINT / PDF LOGIC ---
+    function preparePrintData() {
+        document.getElementById("printName").innerText = currentUserData.fullName;
+        document.getElementById("printId").innerText = currentUserData.serialId;
+        document.getElementById("printDate").innerText = new Date().toLocaleDateString('bn-BD');
+        
+        let html = "";
+        examSubmissionData.forEach((item, i) => {
+            let imgHTML = item.image ? `<br><img src="${item.image}" style="max-height: 100px; margin: 5px 0;">` : '';
+            
+            html += `
+                <div class="print-item">
+                    <p style="font-weight: bold; margin:0;">${i+1}. ${item.question}</p>
+                    ${imgHTML}
+                    <p style="margin:5px 0 0 0; color: #2980b9;">উত্তর: <strong>${item.answer}</strong></p>
+                </div>
+            `;
         });
+        document.getElementById("printContent").innerHTML = html;
+        document.getElementById("printableArea").classList.remove("hidden");
     }
 
-    // -- UNIVERSAL DELETE --
-    window.deleteItem = async (colName, id) => {
-        if(!confirm("আপনি কি নিশ্চিত এটি ডিলিট করবেন?")) return;
-        toggleLoading(true);
+    window.printResult = () => {
+        window.print();
+    }
+    
+    window.downloadMyResult = async () => {
+        toggleLoading(true, "লোড হচ্ছে...");
         try {
-            await deleteDoc(doc(db, colName, id));
-            showToast("ডিলিট সফল!");
-        } catch (e) { showToast("ডিলিট ব্যর্থ", "error"); }
-        toggleLoading(false);
-    }
-
-    // -- RESET FORM --
-    window.resetForm = (type) => {
-        if(type === 'ebook') {
-            document.getElementById("editIdEbook").value = "";
-            document.getElementById("urlEbook").value = "";
-            document.getElementById("fileEbook").value = "";
-            document.getElementById("btnSaveEbook").innerText = "পেজ যোগ করুন";
-            document.getElementById("btnCancelEbook").classList.add("hidden");
-        }
-        else if(type === 'question') {
-            document.getElementById("editIdQ").value = "";
-            document.getElementById("qTitle").value = "";
-            document.getElementById("qAns").value = "";
-            document.getElementById("urlQ").value = "";
-            document.getElementById("btnSaveQ").innerText = "প্রশ্ন যোগ করুন";
-            document.getElementById("btnCancelQ").classList.add("hidden");
-        }
-        else if(type === 'mcq') {
-            document.getElementById("editIdMCQ").value = "";
-            document.getElementById("mcqTitle").value = "";
-            ['opt1','opt2','opt3','opt4'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById("mcqCorrect").value = "1";
-            document.getElementById("btnSaveMCQ").innerText = "MCQ সেভ করুন";
-            document.getElementById("btnCancelMCQ").classList.add("hidden");
-        }
-        else if(type === 'truefalse') {
-            document.getElementById("editIdTF").value = "";
-            document.getElementById("tfTitle").value = "";
-            document.getElementById("tfCorrect").value = "সত্য";
-            document.getElementById("btnSaveTF").innerText = "সেভ করুন";
-            document.getElementById("btnCancelTF").classList.add("hidden");
-        }
-        else if(type === 'translate') {
-            document.getElementById("editIdTrans").value = "";
-            document.getElementById("transBn").value = "";
-            document.getElementById("transEn").value = "";
-            document.getElementById("btnSaveTrans").innerText = "অনুবাদ যোগ করুন";
-            document.getElementById("btnCancelTrans").classList.add("hidden");
-        }
-    }
-
-    // -- EBOOK SAVE FUNCTION --
-    window.editEbook = (id, img) => {
-        document.getElementById("editIdEbook").value = id;
-        document.getElementById("urlEbook").value = img;
-        document.getElementById("btnSaveEbook").innerText = "আপডেট করুন";
-        document.getElementById("btnCancelEbook").classList.remove("hidden");
-        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
-    }
-
-    window.saveEbook = async () => {
-        const id = document.getElementById("editIdEbook").value;
-        const img = document.getElementById("urlEbook").value;
-
-        if(!img) return showToast("ইমেজ আপলোড করুন", "error");
-
-        toggleLoading(true);
-        try {
-            const data = {
-                type: 'ebook',
-                image: img,
-                createdAt: Timestamp.now()
-            };
-
-            if(id) {
-                // আপডেট করার সময় Timestamp চেঞ্জ হবে না যাতে অর্ডার ঠিক থাকে
-                delete data.createdAt; 
-                await updateDoc(doc(db, "contents", id), data);
-                showToast("পেজ আপডেট হয়েছে!");
+            const q = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
+            const snap = await getDocs(q);
+            if(!snap.empty) {
+                const data = snap.docs[0].data();
+                examSubmissionData = data.answers.map(a => ({
+                    question: a.questionTitle,
+                    answer: a.userAnswer,
+                    image: null 
+                }));
+                
+                preparePrintData();
+                toggleLoading(false);
+                setTimeout(() => window.print(), 500);
             } else {
-                await addDoc(collection(db, "contents"), data);
-                showToast("নতুন পেজ যোগ হয়েছে!");
+                showToast("কোন তথ্য পাওয়া যায়নি", "error");
+                toggleLoading(false);
             }
-            resetForm('ebook');
-        } catch (e) { showToast("ব্যর্থ: " + e.message, "error"); }
-        toggleLoading(false);
+        } catch(e) { toggleLoading(false); console.error(e); }
     }
 
-    // -- OTHER SAVE FUNCTIONS --
-    window.editQuestion = (id, q, a, img) => {
-        document.getElementById("editIdQ").value = id;
-        document.getElementById("qTitle").value = decodeURIComponent(q);
-        document.getElementById("qAns").value = decodeURIComponent(a);
-        document.getElementById("urlQ").value = img;
-        document.getElementById("btnSaveQ").innerText = "আপডেট করুন";
-        document.getElementById("btnCancelQ").classList.remove("hidden");
-        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
-    }
-
-    window.saveQuestion = async () => {
-        const id = document.getElementById("editIdQ").value;
-        const q = document.getElementById("qTitle").value;
-        const a = document.getElementById("qAns").value;
-        const img = document.getElementById("urlQ").value;
-        if(!q || !a) return showToast("প্রশ্ন ও উত্তর লিখুন", "error");
-        toggleLoading(true);
+    // --- LICENSE & KEY ---
+    window.verifyKey = async () => {
+        const key = document.getElementById("licenseKeyInput").value.trim();
+        if(!key) return showToast("কি (Key) দিন", "error");
+        toggleLoading(true, "যাচাই করা হচ্ছে...");
         try {
-            const data = { type: 'question', question: q, answer: a, image: img || null, createdAt: Timestamp.now() };
-            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("আপডেট সফল!"); }
-            else { await addDoc(collection(db, "contents"), data); showToast("প্রশ্ন যোগ হয়েছে!"); }
-            resetForm('question');
-        } catch (e) { showToast("ব্যর্থ", "error"); }
+            const q = query(collection(db, "activation_keys"), where("key", "==", key), where("used", "==", false));
+            const snap = await getDocs(q);
+            if(snap.empty) { showToast("ভুল বা ব্যবহৃত কি!", "error"); toggleLoading(false); return; }
+            
+            let keyData, keyId;
+            snap.forEach(d => { keyData = d.data(); keyId = d.id; });
+            
+            const now = new Date();
+            const newExpiry = new Date(now.setDate(now.getDate() + keyData.days));
+            
+            await updateDoc(doc(db, "users", auth.currentUser.uid), { licenseExpiry: Timestamp.fromDate(newExpiry) });
+            await updateDoc(doc(db, "activation_keys", keyId), { used: true, usedBy: auth.currentUser.uid });
+            
+            currentUserData.licenseExpiry = Timestamp.fromDate(newExpiry);
+            showToast("অ্যাক্টিভ হয়েছে!");
+            checkLicenseValidity();
+        } catch (e) { showToast("এরর হয়েছে", "error"); toggleLoading(false); }
+    }
+
+    function checkLicenseValidity() {
+        if(!currentUserData.licenseExpiry) { switchView('verificationSection'); toggleLoading(false); return; }
+        const now = new Date();
+        const expiry = currentUserData.licenseExpiry.toDate();
+        if (now > expiry) {
+            document.getElementById("licenseMsg").innerText = "মেয়াদ শেষ: " + expiry.toLocaleDateString();
+            switchView('verificationSection');
+        } else {
+            switchView('home');
+            loadSlider();
+            const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+            document.getElementById("expiryDisplay").innerText = `মেয়াদ আছে: ${daysLeft} দিন`;
+        }
         toggleLoading(false);
     }
-
-    window.editMCQ = (id, q, options, correct) => {
-        document.getElementById("editIdMCQ").value = id;
-        document.getElementById("mcqTitle").value = decodeURIComponent(q);
-        const decodedCorrect = decodeURIComponent(correct);
-        if(options[0]) document.getElementById("opt1").value = options[0];
-        if(options[1]) document.getElementById("opt2").value = options[1];
-        if(options[2]) document.getElementById("opt3").value = options[2];
-        if(options[3]) document.getElementById("opt4").value = options[3];
-        let correctIndex = options.indexOf(decodedCorrect) + 1;
-        if(correctIndex > 0) document.getElementById("mcqCorrect").value = correctIndex;
-        document.getElementById("btnSaveMCQ").innerText = "আপডেট করুন";
-        document.getElementById("btnCancelMCQ").classList.remove("hidden");
-        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
+    
+    window.showNotification = () => {
+        const modal = new bootstrap.Modal(document.getElementById('notifModal'));
+        if(currentUserData.resultPublished) {
+            document.getElementById("notifContent").innerHTML = `
+                <div class="alert alert-success">
+                    <h5>ফলাফল প্রকাশিত হয়েছে!</h5>
+                    <p>আপনার স্কোর: ${currentUserData.examScore || 'N/A'}</p>
+                </div>`;
+        }
+        modal.show();
     }
 
-    window.saveMCQ = async () => {
-        const id = document.getElementById("editIdMCQ").value;
-        const q = document.getElementById("mcqTitle").value;
-        const o1 = document.getElementById("opt1").value;
-        const o2 = document.getElementById("opt2").value;
-        const o3 = document.getElementById("opt3").value;
-        const o4 = document.getElementById("opt4").value;
-        const correctIndex = document.getElementById("mcqCorrect").value;
-        if(!q || !o1 || !o2) return showToast("প্রশ্ন ও অন্তত ২টি অপশন দিন", "error");
-        const options = [o1, o2, o3, o4].filter(o => o);
-        const correctValue = options[parseInt(correctIndex)-1];
-        if(!correctValue) return showToast("সঠিক উত্তরটি অপশনে নেই", "error");
-        toggleLoading(true);
+    async function loadSlider() {
         try {
-            const data = { type: 'mcq', question: q, options: options, correct: correctValue, createdAt: Timestamp.now() };
-            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("MCQ আপডেট হয়েছে!"); }
-            else { await addDoc(collection(db, "contents"), data); showToast("MCQ যোগ হয়েছে!"); }
-            resetForm('mcq');
-        } catch (e) { showToast("ব্যর্থ", "error"); }
-        toggleLoading(false);
-    }
-
-    window.editTF = (id, q, correct) => {
-        document.getElementById("editIdTF").value = id;
-        document.getElementById("tfTitle").value = decodeURIComponent(q);
-        document.getElementById("tfCorrect").value = correct;
-        document.getElementById("btnSaveTF").innerText = "আপডেট করুন";
-        document.getElementById("btnCancelTF").classList.remove("hidden");
-        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
-    }
-
-    window.saveTrueFalse = async () => {
-        const id = document.getElementById("editIdTF").value;
-        const title = document.getElementById("tfTitle").value;
-        const correctVal = document.getElementById("tfCorrect").value;
-        if(!title) return showToast("বাক্য লিখুন", "error");
-        toggleLoading(true);
-        try {
-            const data = { type: 'truefalse', question: title, options: ["সত্য", "মিথ্যা"], correct: correctVal, createdAt: Timestamp.now() };
-            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("আপডেট হয়েছে!"); }
-            else { await addDoc(collection(db, "contents"), data); showToast("যোগ হয়েছে!"); }
-            resetForm('truefalse');
-        } catch (e) { showToast("ব্যর্থ", "error"); }
-        toggleLoading(false);
-    }
-
-    window.editTrans = (id, bn, en) => {
-        document.getElementById("editIdTrans").value = id;
-        document.getElementById("transBn").value = decodeURIComponent(bn);
-        document.getElementById("transEn").value = decodeURIComponent(en);
-        document.getElementById("btnSaveTrans").innerText = "আপডেট করুন";
-        document.getElementById("btnCancelTrans").classList.remove("hidden");
-        document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
-    }
-
-    window.saveTranslate = async () => {
-        const id = document.getElementById("editIdTrans").value;
-        const bn = document.getElementById("transBn").value;
-        const en = document.getElementById("transEn").value;
-        if(!bn || !en) return showToast("উভয় বাক্য লিখুন", "error");
-        toggleLoading(true);
-        try {
-            const data = { type: 'translate', question: bn, answer: en, createdAt: Timestamp.now() };
-            if(id) { delete data.createdAt; await updateDoc(doc(db, "contents", id), data); showToast("অনুবাদ আপডেট হয়েছে!"); }
-            else { await addDoc(collection(db, "contents"), data); showToast("অনুবাদ যোগ হয়েছে!"); }
-            resetForm('translate');
-        } catch (e) { showToast("ব্যর্থ", "error"); }
-        toggleLoading(false);
-    }
-
-    window.generateKey = async () => {
-        const days = document.getElementById("keyDuration").value;
-        const newKey = "AUTO-" + Math.floor(100000 + Math.random() * 900000); 
-        toggleLoading(true);
-        try {
-            await addDoc(collection(db, "activation_keys"), { key: newKey, days: parseInt(days), used: false, createdAt: Timestamp.now() });
-            document.getElementById("newKeyDisplay").innerText = newKey;
-            document.getElementById("keyResult").classList.remove("hidden");
-            showToast("নতুন কি তৈরি হয়েছে!");
-        } catch (e) { showToast("এরর হয়েছে", "error"); } finally { toggleLoading(false); }
-    }
-
-    window.updateSlider = async () => {
-        const u1 = document.getElementById("urlSlide1").value;
-        const u2 = document.getElementById("urlSlide2").value;
-        const u3 = document.getElementById("urlSlide3").value;
-        if(!u1) return showToast("অন্তত প্রথম স্লাইড দিতে হবে", "error");
-        const images = [u1, u2, u3].filter(i => i);
-        toggleLoading(true);
-        try { await setDoc(doc(db, "app_settings", "slider"), { images }); showToast("স্লাইডার আপডেট সফল!"); }
-        catch (e) { showToast("ব্যর্থ", "error"); }
-        toggleLoading(false);
+            const docSnap = await getDoc(doc(db, "app_settings", "slider"));
+            if(docSnap.exists() && docSnap.data().images) {
+                const imgs = docSnap.data().images;
+                const c = document.getElementById("sliderContainer");
+                c.innerHTML = "";
+                imgs.forEach((u, i) => {
+                    c.innerHTML += `<div class="carousel-item ${i===0?'active':''}"><div class="slider-wrapper"><img src="${u}" class="slider-img"></div></div>`;
+                });
+            }
+        } catch(e) {}
     }
 
 </script>

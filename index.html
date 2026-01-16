@@ -46,7 +46,7 @@
         
         /* --- FIXED PRINT STYLES --- */
         @media print {
-            body { background-color: white; }
+            body { background-color: white; -webkit-print-color-adjust: exact; }
             .app-container, .no-print, .modal, .toastify { display: none !important; }
             
             #printableArea { 
@@ -56,10 +56,21 @@
                 left: 0; 
                 width: 100%;
                 z-index: 9999;
-                padding: 40px;
+                padding: 20px 40px;
                 background: white;
             }
-            .print-item { page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+            .print-header-row {
+                display: flex !important;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #000;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                font-weight: bold;
+                width: 100%;
+            }
+            .print-item { page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
         }
     </style>
 </head>
@@ -187,7 +198,7 @@
                 <p class="small text-muted">এডমিন পরীক্ষা চালু করলে এখানে নোটিফিকেশন দেখতে পাবেন।</p>
             </div>
 
-            <!-- 1. Exam Locked -->
+            <!-- 1. Exam Locked (Ready to take) -->
             <div id="examActiveAlert" class="exam-locked-overlay hidden">
                 <i class="fas fa-clock fa-3x mb-3 text-danger animate__animated animate__pulse animate__infinite"></i>
                 <h4 class="fw-bold">eExam চলছে!</h4>
@@ -208,7 +219,6 @@
                 </button>
             </div>
         </div>
-        <!-- Menu Grid REMOVED -->
     </div>
 
     <!-- EXAM INTERFACE -->
@@ -259,18 +269,21 @@
 
 </div>
 
-<!-- PRINTABLE AREA -->
+<!-- PRINTABLE AREA (UPDATED LAYOUT) -->
 <div id="printableArea" class="hidden">
-    <div class="text-center border-bottom pb-3 mb-3">
+    <div class="text-center pb-2 mb-3">
         <h2>অটো মেকানিক ই-এক্সাম</h2>
-        <p>উত্তরপত্র</p>
+        <p class="m-0">ফাইনাল পরীক্ষা - উত্তরপত্র</p>
     </div>
-    <div class="mb-3">
-        <p><strong>নাম:</strong> <span id="printName"></span></p>
-        <p><strong>আইডি:</strong> <span id="printId"></span></p>
-        <p><strong>তারিখ:</strong> <span id="printDate"></span></p>
+    
+    <!-- তথ্য এক লাইনে (Row) দেখানোর জন্য -->
+    <div class="print-header-row">
+        <span>নাম: <span id="printName"></span></span>
+        <span>আইডি: <span id="printId"></span></span>
+        <span>জেলা: <span id="printDist"></span></span>
+        <span>তারিখ: <span id="printDate"></span></span>
     </div>
-    <hr>
+
     <div id="printContent">
         <!-- Questions and Answers will appear here -->
     </div>
@@ -302,6 +315,7 @@
     let currentUserData = null;
     let examTimerInterval;
     let examSubmissionData = [];
+    let currentBatchId = "batch_default"; // Default batch
 
     // --- HELPER FUNCTIONS ---
     window.showToast = (msg, type="info") => {
@@ -315,7 +329,6 @@
     }
 
     window.switchView = (view) => {
-        // Removed 'contentPage' from views list
         const views = ["loginView", "signupView", "homeSection", "verificationSection", "examPage", "examSuccessPage"];
         views.forEach(v => document.getElementById(v)?.classList.add("hidden"));
         document.getElementById("authSection").classList.add("hidden");
@@ -466,7 +479,7 @@
         } else { switchView('login'); toggleLoading(false); }
     });
 
-    // --- EXAM LOGIC ---
+    // --- EXAM LOGIC UPDATED FOR BATCHES ---
     async function checkExamConfigAndStatus() {
         try {
             const settingsDoc = await getDoc(doc(db, "app_settings", "exam_config"));
@@ -482,8 +495,16 @@
             if(settingsDoc.exists() && settingsDoc.data().isOn) {
                 const config = settingsDoc.data();
                 window.examConfigData = config;
+                
+                // Set Current Batch ID
+                currentBatchId = config.batchId || "batch_1"; 
 
-                const subQuery = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
+                // Check submission ONLY for this batch
+                const subQuery = query(
+                    collection(db, "exam_submissions"), 
+                    where("uid", "==", auth.currentUser.uid),
+                    where("batchId", "==", currentBatchId)
+                );
                 const subSnap = await getDocs(subQuery);
 
                 if (!subSnap.empty) {
@@ -493,7 +514,6 @@
                     document.getElementById("examMetaDisplay").innerText = `সময়: ${config.duration} মিনিট`;
                 }
             } else {
-                // Exam is OFF
                 noExamMsg.classList.remove("hidden");
             }
         } catch(e) { console.error("Exam check error", e); }
@@ -586,6 +606,7 @@
         }, 1000);
     }
 
+    // --- SUBMIT EXAM WITH BATCH ID ---
     window.submitExam = async (isAuto) => {
         clearInterval(examTimerInterval);
         toggleLoading(true, "জমা হচ্ছে...");
@@ -613,6 +634,7 @@
                 name: currentUserData.fullName,
                 district: currentUserData.district,
                 submittedAt: Timestamp.now(),
+                batchId: currentBatchId, // Added Batch ID
                 answers: formattedAnswers,
                 totalScore: 0,
                 status: 'pending'
@@ -627,10 +649,11 @@
         }
     }
 
-    // --- PRINT / PDF LOGIC ---
+    // --- PRINT / PDF LOGIC UPDATED ---
     function preparePrintData() {
         document.getElementById("printName").innerText = currentUserData.fullName;
         document.getElementById("printId").innerText = currentUserData.serialId;
+        document.getElementById("printDist").innerText = currentUserData.district || "N/A"; // Added District
         document.getElementById("printDate").innerText = new Date().toLocaleDateString('bn-BD');
         
         let html = "";
@@ -653,11 +676,29 @@
         window.print();
     }
     
+    // Download result specific to Current Batch or Latest
     window.downloadMyResult = async () => {
         toggleLoading(true, "লোড হচ্ছে...");
         try {
-            const q = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
-            const snap = await getDocs(q);
+            // First try to get current batch result
+            let q = query(
+                collection(db, "exam_submissions"), 
+                where("uid", "==", auth.currentUser.uid),
+                where("batchId", "==", currentBatchId)
+            );
+            let snap = await getDocs(q);
+
+            // If no current batch result, get the very last one
+            if(snap.empty) {
+                q = query(
+                    collection(db, "exam_submissions"), 
+                    where("uid", "==", auth.currentUser.uid),
+                    orderBy("submittedAt", "desc"),
+                    limit(1)
+                );
+                snap = await getDocs(q);
+            }
+
             if(!snap.empty) {
                 const data = snap.docs[0].data();
                 examSubmissionData = data.answers.map(a => ({
